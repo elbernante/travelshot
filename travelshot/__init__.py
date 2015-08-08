@@ -1,6 +1,7 @@
 '''
 Travel Shot app module initialization
 '''
+
 from flask import Flask
 from .api.api import api
 from .views.pages import pages
@@ -12,6 +13,7 @@ import exceptions
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('config')
 
+# User config.py file in instance/ folder for local development
 try:
     app.config.from_pyfile('config.py')
 except IOError:
