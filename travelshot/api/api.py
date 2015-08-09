@@ -22,5 +22,5 @@ def nilatch():
     user = User(name='Test User')
     db_session.add(user)
     db_session.commit()
-    print("User ID: " + str(user.id))
+    print("User ID: " + str(user.serialize))
     return 'Test User Added'

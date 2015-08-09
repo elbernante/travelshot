@@ -2,6 +2,8 @@
 Model definitions
 '''
 
+import datetime
+
 from sqlalchemy import Column
 from sqlalchemy import ForeignKey
 from sqlalchemy import Sequence
@@ -25,7 +27,7 @@ class User(Base):
     id = Column(BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), Sequence('user_id_seq'), primary_key=True)
     gplus_id = Column(String(80))
     facebook_id = Column(String(80))
-    email = Column(String(80))
+    email = Column(String(80))              # Users can deny access to their email address
     name = Column(String(240))
     given_name = Column(String(80))
     middle_name = Column(String(80))
@@ -53,5 +55,47 @@ class User(Base):
             'gender': self.gender,
             'link': self.link,
             'verified_email': self.verified_email
+        }
+
+class Category(Base):
+    '''Represents a category'''
+    __tablename__ = 'category'
+
+    id = Column(Integer, Sequence('category_id_seq'), primary_key=True)
+    name = Column(String(250), nullable=False)
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializable format"""
+        return {
+            'id': self.id,
+            'name': self.name
+        }
+
+class Item(Base):
+    '''Represents an item'''
+    __tablename__ = 'item'
+
+    id = Column(BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), Sequence('item_id_seq'), primary_key=True)
+    title = Column(String(250))
+    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
+    description = Column(Text)
+    author_id = Column(BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), ForeignKey('user.id'), nullable=False)
+    date_created = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)
+    last_modified = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
+    category = relationship(Category)
+    user = relationship(User)
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializable format"""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'category_id': self.category_id,
+            'description': self.description,
+            'author_id': self.author_id,
+            'date_created': self.date_created,
+            'last_modified': self.last_modified
         }
 
