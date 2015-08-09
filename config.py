@@ -3,11 +3,11 @@ BCRYPT_LEVEL = 12 # Configuration for the Flask-Bcrypt extension
 MAIL_FROM_EMAIL = "elbernante@gmail.com" # For use in application emails
 
 SQLALCHEMY_ECHO = False
-
+SQLALCHEMY_TRACK_MODIFICATIONS = False
 SQLALCHEMY_DATABASE_URI = 'sqlite:///travelshot.db'
 
 # Enable protection agains *Cross-site Request Forgery (CSRF)*
-CSRF_ENABLED     = True
+CSRF_ENABLED = True
 
 # Use a secure, unique and absolutely secret key for
 # signing the data. 

@@ -6,9 +6,8 @@ JSON or XML format.
 
 from flask import Blueprint
 
-from ..database import db_session
+from .. import db
 from ..models import User
-
 
 api = Blueprint('api', __name__)
 
@@ -20,7 +19,7 @@ def index():
 @api.route('/test')
 def nilatch():
     user = User(name='Test User')
-    db_session.add(user)
-    db_session.commit()
+    db.session.add(user)
+    db.session.commit()
     print("User ID: " + str(user.serialize))
     return 'Test User Added'

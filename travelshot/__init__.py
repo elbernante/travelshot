@@ -3,7 +3,7 @@ Travel Shot app module initialization
 '''
 
 from flask import Flask
-import exceptions
+from .lib.flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('config')
@@ -12,16 +12,9 @@ app.config.from_object('config')
 try:
     app.config.from_pyfile('config.py')
 except IOError:
-    pass
+    pass    # No local development config file
 
-from .database import init_db
-init_db()
-
-from .database import db_session
-@app.teardown_appcontext
-def shutdown_session(exception=None):
-    '''Closes the database connection every after request'''
-    db_session.remove()
+db = SQLAlchemy(app)
 
 from .api.api import api
 from .views.pages import pages

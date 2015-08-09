@@ -3,40 +3,26 @@ Model definitions
 '''
 
 import datetime
-
-from sqlalchemy import Column
-from sqlalchemy import ForeignKey
-from sqlalchemy import Sequence
-
-from sqlalchemy import BigInteger
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import Text
-from sqlalchemy import DateTime
-from sqlalchemy import Boolean
 from sqlalchemy.dialects import sqlite
+from . import db
 
-from sqlalchemy.orm import relationship
-
-from .database import Base
-
-class User(Base):
+class User(db.Model):
     '''Represents a user'''
     __tablename__ = 'user'
 
-    id = Column(BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), Sequence('user_id_seq'), primary_key=True)
-    gplus_id = Column(String(80))
-    facebook_id = Column(String(80))
-    email = Column(String(80))              # Users can deny access to their email address
-    name = Column(String(240))
-    given_name = Column(String(80))
-    middle_name = Column(String(80))
-    family_name = Column(String(80))
-    picture = Column(String(500))
-    locale = Column(String(10))
-    gender = Column(String(10))
-    link = Column(String(500))
-    verified_email = Column(Boolean)
+    id = db.Column(db.BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), db.Sequence('user_id_seq'), primary_key=True)
+    gplus_id = db.Column(db.String(80))
+    facebook_id = db.Column(db.String(80))
+    email = db.Column(db.String(80))              # Users can deny access to their email address
+    name = db.Column(db.String(240))
+    given_name = db.Column(db.String(80))
+    middle_name = db.Column(db.String(80))
+    family_name = db.Column(db.String(80))
+    picture = db.Column(db.String(500))
+    locale = db.Column(db.String(10))
+    gender = db.Column(db.String(10))
+    link = db.Column(db.String(500))
+    verified_email = db.Column(db.Boolean)
 
     @property
     def serialize(self):
@@ -46,7 +32,7 @@ class User(Base):
             'gplus_id': self.gplus_id,
             'facebook_id': self.facebook_id,
             'email': self.email,
-            'name': self.email,
+            'name': self.name,
             'given_name': self.given_name,
             'middle_name': self.middle_name,
             'family_name': self.family_name,
@@ -57,12 +43,12 @@ class User(Base):
             'verified_email': self.verified_email
         }
 
-class Category(Base):
+class Category(db.Model):
     '''Represents a category'''
     __tablename__ = 'category'
 
-    id = Column(Integer, Sequence('category_id_seq'), primary_key=True)
-    name = Column(String(250), nullable=False)
+    id = db.Column(db.Integer, db.Sequence('category_id_seq'), primary_key=True)
+    name = db.Column(db.String(250), nullable=False)
 
     @property
     def serialize(self):
@@ -72,19 +58,19 @@ class Category(Base):
             'name': self.name
         }
 
-class Item(Base):
+class Item(db.Model):
     '''Represents an item'''
     __tablename__ = 'item'
 
-    id = Column(BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), Sequence('item_id_seq'), primary_key=True)
-    title = Column(String(250))
-    category_id = Column(Integer, ForeignKey('category.id'), nullable=False)
-    description = Column(Text)
-    author_id = Column(BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), ForeignKey('user.id'), nullable=False)
-    date_created = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)
-    last_modified = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
-    category = relationship(Category)
-    user = relationship(User)
+    id = db.Column(db.BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), db.Sequence('item_id_seq'), primary_key=True)
+    title = db.Column(db.String(250))
+    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=False)
+    description = db.Column(db.Text)
+    author_id = db.Column(db.BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), db.ForeignKey('user.id'), nullable=False)
+    date_created = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)
+    last_modified = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
+    category = db.relationship(Category)
+    user = db.relationship(User)
 
     @property
     def serialize(self):
