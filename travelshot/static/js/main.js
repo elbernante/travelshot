@@ -12,10 +12,30 @@ var pu = $('.photoupload').photoupload({
 
 
 var tsf = (function ($) {
-    var _functionify = function (func) {
-        return ('function' === typeof func) 
-            ? func : function() {/*no-op*/};
-    };
+
+    var util = function ($) {
+        var _utils = {
+            functionify: function (func) {
+                return ('function' === typeof func)
+                    ? func : function() {/*no-op*/};
+            },
+
+            errorHanlder: function (jqXHR, textStatus, errorThrown, callback) {
+                // TODO: Remove log
+                console.log("ERROR:" + textStatus + " : " + errorThrown);
+                var data = {};
+                try {
+                    data = $.parseJSON(jqXHR.responseText);
+                    data = (data['error']) ? data : {error: data};
+                } catch (err) {
+                    data = {error: jqXHR.responseText};
+                }
+                _utils.functionify(callback)(data);
+            }
+        };
+
+        return _utils;
+    }($);
 
     /////////////////////// BEGIN APP_GLOBALS ///////////////////////
     var APP_GLOBALS = (function($) {
@@ -27,19 +47,8 @@ var tsf = (function ($) {
             }          
             while (getRequestQueue.length > 0) {
                 req = getRequestQueue.shift();
-                _functionify(req.callback)(g[req.key]);
+                util.functionify(req.callback)(g[req.key]);
             }
-        };
-
-        var errorHandler = function (jqXHR, textStatus, errorThrown, callback) {
-            console.log("ERROR:" + textStatus + " : " + errorThrown);
-            var data = {};
-            try {
-                data = $.parseJSON(jqXHR.responseText);
-            } catch (err) {
-                data = {'error': jqXHR.responseText};
-            }
-            _functionify(callback)(data);
         };
 
         var requestKeys = function(successCallback, errorCallback) {
@@ -48,10 +57,10 @@ var tsf = (function ($) {
                 url: '/api/requestlogin/',
                 dataType: 'json',
                 success: function(data, textStatus, jqXHR) {
-                    _functionify(successCallback)(data);
+                    util.functionify(successCallback)(data);
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
-                    errorHandler(jqXHR, textStatus, errorThrown, errorCallback);
+                    util.errorHanlder(jqXHR, textStatus, errorThrown, errorCallback);
                 }
             });
         };
@@ -63,13 +72,13 @@ var tsf = (function ($) {
                         g[key] = data[key];
                     }
                     processQueue();
-                    _functionify(callback)(data);
+                    util.functionify(callback)(data);
                 }, callback);
             },
             refreshKeys: function (callback) {
                 requestKeys(function (data) {
                     g['state'] = data['state'];
-                    _functionify(callback)(data);
+                    util.functionify(callback)(data);
                 }, callback);
             },
             asyncGet: function (key, callback) {
@@ -130,6 +139,22 @@ var tsf = (function ($) {
             }
         };
 
+        ApiLib.prototype.loadScript = function (src, props, id) {
+            var js,
+                d = document,
+                s = 'script',
+                st = d.getElementsByTagName(s)[0];
+
+            if (d.getElementById(id)){return;}
+
+            js = d.createElement(s);
+            js.id = id;
+            js.src = src;
+            $.extend(js, props);
+
+            st.parentNode.insertBefore(js, st);
+        };
+
         var _apis = {
             tsApi: new ApiLib(),
             gApi: new ApiLib(),
@@ -173,7 +198,18 @@ var tsf = (function ($) {
                     self.fireEvent('init');
                 });
             }
-        }
+        };
+
+        _apis.gApi.load = function() {
+            var self = this;
+            self.loadScript(
+                '//apis.google.com/js/client:platform.js',
+                {async: true, defer: true, onload: function () {
+                    self.isLoaded(true);
+                }},
+                'gplus-jssdk'
+            );
+        };
 
         // Facebook API Handler
         _apis.fbApi.initApi = function () {
@@ -187,6 +223,19 @@ var tsf = (function ($) {
                 self.fireEvent('init');
             }
         };
+
+        _apis.fbApi.load = function() {
+            var self = this;
+            window.fbAsyncInit = function() {
+                self.isLoaded(true);
+            };
+            self.loadScript(
+                '//connect.facebook.net/en_US/sdk.js',
+                {async: true, defer: true},
+                'facebook-jssdk'
+            );
+        };
+
 
         _apis.gApi.on('init', function() {
             _apis.tsApi.hasApiInitChange();
@@ -211,21 +260,14 @@ var tsf = (function ($) {
 
         // Start initializing APIs
         _apis.tsApi.initApi();
+        _apis.gApi.load();
+        _apis.fbApi.load();
 
         return _apis;
     }($);
     /////////////////////// END API LOADING HANLDER ///////////////////////
 
     return {
-        testfunc: function() {
-            console.log(this);
-        },
-        googleLibLoaded: function () {
-            apiMonitor.gApi.isLoaded(true);
-        },
-        facebookLibLoaded: function () {
-            apiMonitor.fbApi.isLoaded(true);
-        },
         refreshLoginToken: function (callback) {
             var self = this;
             if (apiMonitor.gApi.isInitiated() && apiMonitor.fbApi.isInitiated()) {
@@ -237,8 +279,9 @@ var tsf = (function ($) {
                 apiMonitor.tsApi.initApi();
             }
         },
+
         googleLogin: function (callback) {
-            var funcCallback = _functionify(callback);
+            var funcCallback = util.functionify(callback);
             
             gapi.auth2.getAuthInstance().grantOfflineAccess({
                 "redirect_uri": "postmessage",
@@ -259,24 +302,19 @@ var tsf = (function ($) {
                             funcCallback(data);
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
-                            var tsErr = {};
-                            try {
-                                tsErr = $.parseJSON(jqXHR.responseText);
-                            } catch (err) {
-                                tsErr = {"error": jqXHR.responseText};
-                            }
-                            funcCallback(tsErr);
+                            util.errorHanlder(jqXHR, textStatus, errorThrown, funcCallback);
                         }
                     });
                 } else {
                     // TODO: Notify user for error
                     console.log("ERROR: Unable to get authorization code.")
-                    funcCallback({"error": "Unable to get authorization code."});
+                    funcCallback({error: "Unable to get authorization code."});
                 }
             });
         },
+
         facebookLogin: function (callback) {
-            var funcCallback = _functionify(callback);
+            var funcCallback = util.functionify(callback);
 
             FB.login(function(response){
                 console.dir(response);
@@ -296,13 +334,7 @@ var tsf = (function ($) {
                             funcCallback(data);
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
-                            var tsErr = {};
-                            try {
-                                tsErr = $.parseJSON(jqXHR.responseText);
-                            } catch (err) {
-                                tsErr = {"error": jqXHR.responseText};
-                            }
-                            funcCallback(tsErr);
+                            util.errorHanlder(jqXHR, textStatus, errorThrown, funcCallback);
                         }
                     });
                 } else {
@@ -314,25 +346,6 @@ var tsf = (function ($) {
         }
     }
 })(jQuery);
-
-
-// --- Google Login ---
-function initGApi() {
-    tsf.googleLibLoaded();
-}
-
-// --- Facebook Login ---
-window.fbAsyncInit = function() {
-    tsf.facebookLibLoaded();
-};
-
-(function(d, s, id){
-    var js, fjs = d.getElementsByTagName(s)[0];
-    if (d.getElementById(id)) {return;}
-    js = d.createElement(s); js.id = id;
-    js.src = "//connect.facebook.net/en_US/sdk.js";
-    fjs.parentNode.insertBefore(js, fjs);
-}(document, 'script', 'facebook-jssdk'));
 
 // --- UI Scripts ---
 $('#submitPhoto').on('click', function (event) {
