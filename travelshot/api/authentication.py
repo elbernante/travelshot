@@ -9,10 +9,10 @@ import requests
 
 from urlparse import parse_qs
 
-from flask import Blueprint
 from flask import request
 from flask import send_from_directory
 from flask import session as login_session
+from flask import current_app as app
 
 from werkzeug.exceptions import BadRequest, Unauthorized
 
@@ -20,29 +20,33 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import OAuth2Credentials
 
-from .. import app
-from .. import db
+# from .. import app
+# from .. import db
 from ..utils import util
-from ..models import User
+# from ..models import User
 
-api = Blueprint('api', __name__)
+from . import api
 
+# TODO: Remove this function
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
+# TODO: Remove this function
 @api.route('/')
 def index():
     '''Test route'''
     return 'Hello World! API'
 
+# TODO: Remove this function
 @api.route('/test')
 def nilatch():
-    user = User(name='Test User')
-    db.session.add(user)
-    db.session.commit()
-    print("User ID: " + str(user.serialize))
+    # user = User(name='Test User')
+    # db.session.add(user)
+    # db.session.commit()
+    # print("User ID: " + str(user.serialize))
     return 'Test User Added'
+
 
 @api.route('/requestlogin/', methods=['GET'])
 @util.format_response
@@ -66,6 +70,7 @@ def login_key():
     }
     return key_set
 
+
 def _upgrade_auth_code_to_credentials(auth_code):
     '''Upgrades an authorization code into a credentials object'''
     try:
@@ -75,6 +80,7 @@ def _upgrade_auth_code_to_credentials(auth_code):
         return credentials, 'Success'
     except FlowExchangeError:
         return None, 'Failed to upgrade the authorization code.'
+
 
 def _verifiy_access_token(access_token, gplus_id):
     '''Verify access token is valid.'''
@@ -98,6 +104,7 @@ def _verifiy_access_token(access_token, gplus_id):
 
     return True, 'Success'
 
+
 def _g_plus_get_user_info(credentials):
     # Get user info
     userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
@@ -106,6 +113,7 @@ def _g_plus_get_user_info(credentials):
     if not user_info or user_info.get('error'):
         return None, 'Failed to retrieve user information.'
     return user_info, 'Success'
+
 
 def _dump_user_info_to_session_XXX(credentials):
     # TODO: Remove this function
@@ -138,6 +146,7 @@ def _dump_user_info_to_session_XXX(credentials):
 
     return user_info, 'Success'
 
+
 def _dump_user_info_to_session(user_info, provider):
     login_session['provider'] = provider
 
@@ -161,6 +170,7 @@ def _dump_user_info_to_session(user_info, provider):
     login_session['picture'] = picture
 
     return True
+
 
 @api.route('/gconnect/', methods=['POST'])
 @util.validate_token('X-Ts-Login-Token')
@@ -226,7 +236,7 @@ def _clean_up_session():
     login_session['picture'] = None
     login_session['verified_email'] = None
 
-# DISCONNECT - Revoke a current user's token and reset their login_session
+
 @api.route('/gdisconnect/', methods=['GET'])
 @util.format_response
 def gdisconnect():
@@ -247,6 +257,7 @@ def gdisconnect():
 
     return {'success': True}
 
+
 def _get_long_live_access_token(short_live_token):
     # Obtain long-lived access token
     url = 'https://graph.facebook.com/oauth/access_token'
@@ -265,6 +276,7 @@ def _get_long_live_access_token(short_live_token):
 
     return access_token[0], 'Success'
 
+
 def _fb_get_user_info(access_token):
     # Get user info
     fields = ['id', 'email', 'name', 'first_name', 'middle_name', 'gender', 'last_name', 'link', 'locale', 'picture']
@@ -280,6 +292,7 @@ def _fb_get_user_info(access_token):
         return None, 'Failed to retrieve user information.'
 
     return user_info, 'Success'
+
 
 @api.route('/fbconnect/', methods=['POST'])
 @util.validate_token('X-Ts-Login-Token')
@@ -339,6 +352,7 @@ def fbdisconnect():
     return {'success': True}
 
 
+# TODO: Remove this function
 @api.route('/upload/', methods=['GET', 'POST'])
 @util.format_response
 def upload():
@@ -360,6 +374,7 @@ def upload():
     print(request.headers['Content-Type'])
     return {'upload:': 'success'}
 
+# TODO: Remove this function
 @api.route('/setkey/')
 @util.format_response
 def set_my_key():
@@ -367,55 +382,14 @@ def set_my_key():
     login_session['my_test_key'] = my_key
     return my_key
 
+# TODO: Remove this function
 @api.route('/getkey/')
 @util.format_response
 def get_my_key():
     return login_session.get('my_test_key', 'NO KEY')
 
+# TODO: Remove this function
 @api.route('/uploads/image/<filename>')
 def view_mage(filename):
     return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
                                filename)
-
-
-########## Error Handlers ############
-def _error_message(e, message):
-    return {
-       'error': {
-            'message': message,
-            'type':  type(e).__name__,
-            'code': e.code,
-            'description': str(e.description)
-        }
-    }
-
-@api.errorhandler(400)
-@util.format_response
-def bad_request(e):
-    return _error_message(e, 'Bad request error.'), \
-        e.code
-
-@api.errorhandler(401)
-@util.format_response
-def unauthorized_request(e):
-    return _error_message(e, 'Request is unauthorized.'), \
-        e.code
-
-@api.errorhandler(403)
-@util.format_response
-def forbidden_request(e):
-    return _error_message(e, 'The request is forbidden.'), \
-        e.code
-
-@api.errorhandler(404)
-@util.format_response
-def not_found(e):
-    return _error_message(e, 'The end point you requested was not found.'), \
-        e.code
-
-@api.errorhandler(405)
-@util.format_response
-def not_allowed(e):
-    return _error_message(e, 'The reuqest method is not allowed for this end point.'), \
-        e.code
-

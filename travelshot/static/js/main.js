@@ -146,7 +146,7 @@ var tsf = (function ($) {
                         self.fireEvent('init');
                     } else {
                         self._initStatus = 0;
-                        consoler.log('TODO: Failed to init keys. Reload page.');
+                        console.log('TODO: Failed to init keys. Reload page.');
                     }
                 });
             }

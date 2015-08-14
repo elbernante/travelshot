@@ -16,8 +16,11 @@ except IOError:
 
 db = SQLAlchemy(app)
 
-from .api.api import api
+from .api import api
+from .api import authentication
+
 from .views.pages import pages
+
 from .feeds.atom import atom
 from .feeds.rss import rss
 

@@ -1,4 +1,7 @@
+import os
 import json
+
+_basedir = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = False # Turns on debugging features in Flask
 BCRYPT_LEVEL = 12 # Configuration for the Flask-Bcrypt extension
@@ -12,7 +15,7 @@ FB_APP_SECRET = json.loads(open('fb_client_secrets.json', 'r').read())['web']['a
 
 SQLALCHEMY_ECHO = False
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-SQLALCHEMY_DATABASE_URI = 'sqlite:///travelshot.db'
+SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(_basedir, 'travelshot.db')
 
 # Image upload settings
 UPLOAD_FOLDER = '/travelshot/uploads/images'
