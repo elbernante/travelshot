@@ -15,9 +15,9 @@ class User(db.Model):
     facebook_id = db.Column(db.String(80))
     email = db.Column(db.String(80))              # Users can deny access to their email address
     name = db.Column(db.String(240))
-    given_name = db.Column(db.String(80))
+    first_name = db.Column(db.String(80))
     middle_name = db.Column(db.String(80))
-    family_name = db.Column(db.String(80))
+    last_name = db.Column(db.String(80))
     picture = db.Column(db.String(500))
     locale = db.Column(db.String(10))
     gender = db.Column(db.String(10))
@@ -33,9 +33,9 @@ class User(db.Model):
             'facebook_id': self.facebook_id,
             'email': self.email,
             'name': self.name,
-            'given_name': self.given_name,
+            'first_name': self.first_name,
             'middle_name': self.middle_name,
-            'family_name': self.family_name,
+            'last_name': self.last_name,
             'picture': self.picture,
             'locale': self.locale,
             'gender': self.gender,
