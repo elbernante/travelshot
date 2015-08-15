@@ -24,7 +24,7 @@ from . import api
 @util.format_response
 def upload():
 
-    image = request.get('image', None)
+    image = request.files.get('image', None)
     if image is None or not util.allowed_file(image.filename):
         raise BadRequest('Invalid image.')
 
@@ -41,8 +41,8 @@ def upload():
     image_filename = '{}.{}'.format(item.id, img_type)
     image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
 
-    image_url = url_for('pages.view_mage', filename=image_filename)
-
-    return item.serialize.extend({'image_url': image_url})
+    item_dict = item.serialize
+    item_dict['image_url'] = url_for('pages.view_mage', filename=image_filename)
+    return item_dict
 
 

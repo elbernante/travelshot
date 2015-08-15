@@ -89,7 +89,7 @@ class Item(db.Model):
             'category_id': self.category_id,
             'description': self.description,
             'author_id': self.author_id,
-            'date_created': self.date_created,
-            'last_modified': self.last_modified
+            'date_created': self.date_created.isoformat(' '),
+            'last_modified': self.last_modified.isoformat(' ')
         }
 

@@ -349,7 +349,10 @@ var tsf = (function ($) {
 
 // --- UI Scripts ---
 $('#submitPhoto').on('click', function (event) {
-    pu.data('photoupload').submit();
+    var cat = $('#imgCat').val();
+    var title = $('#imgTitle').val();
+    var desck = $('#imgDesc').val();
+    pu.data('photoupload').submit(title, cat, desck);
 });
 
 $('#signinButton').on('click', function (event) {

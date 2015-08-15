@@ -129,7 +129,7 @@
         });
     };
 
-    PhotoUpload.prototype.submit = function(url) {
+    PhotoUpload.prototype.submit = function(title, category, description) {
         console.log("Submitting...");
         var self = this;
 
@@ -140,9 +140,9 @@
 
         var formData = new FormData();
         formData.append(self.settings.fieldName, self.file);
-        formData.append('aField', 'aValue');
-        formData.append('numericField', 123);
-        formData.append('anotherField', "123");
+        formData.append('title', title);
+        formData.append('category', category);
+        formData.append('description', description);
 
         $.ajax({
             url: self.settings.url,
@@ -169,6 +169,7 @@
             },
             success: function (data, textStatus, jqXHR) {
                 console.log('Upload success. ' + textStatus);
+                console.dir(data);
             },
             error: function (jqXHR, textStatus, errorThrown) {
                 console.dir(jqXHR);
