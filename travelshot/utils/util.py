@@ -16,10 +16,6 @@ from werkzeug.exceptions import Unauthorized
 
 from ..lib.dicttoxml import dicttoxml
 
-from ..models import db
-from ..models import User
-
-
 PY2 = sys.version_info[0] == 2
 
 if PY2:
@@ -119,5 +115,3 @@ def to_json(text):
     except:
         return None
 
-def create_user(ls):
-    pass

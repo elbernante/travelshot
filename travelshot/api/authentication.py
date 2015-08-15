@@ -20,10 +20,9 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 from oauth2client.client import OAuth2Credentials
 
-# from .. import app
-# from .. import db
 from ..utils import util
-# from ..models import User
+from ..utils import datastore as ds
+
 
 from . import api
 
@@ -209,11 +208,12 @@ def gconnect():
     login_session['gplus_id'] = credentials.id_token['sub']
 
 
-    # TODO: Create/Update user in database
+    # Check if user already exists, create new otherwise
+    user = ds.get_user_by_gplus_id(login_session['gplus_id'])
+    if user is None:
+        user = ds.create_user(login_session)
 
-    # TODO: After successful sign-in, delete X-Ts-Login-Token
-
-    return 'TODO: Return user object here'
+    return user.serialize
 
 def _clean_up_session():
     # remove store login session data
@@ -323,11 +323,12 @@ def fbconnect():
     login_session['access_token'] = access_token
     login_session['facebook_id'] = user_info['id']
 
-    # TODO: Create/Update user in database
+    # Check if user already exists, create new otherwise
+    user = ds.get_user_by_facebook_id(login_session['facebook_id'])
+    if user is None:
+        user = ds.create_user(login_session)
 
-    # TODO: After successful sign-in, delete X-Ts-Login-Token
-
-    return 'TODO: Incomplete yet'
+    return user.serialize
 
 
 @api.route('/fbdisconnect/', methods=['GET'])

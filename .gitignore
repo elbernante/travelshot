@@ -15,6 +15,7 @@ Thumbs.db
 
 # Project Specific #
 ####################
+travelshot/*.db
 instance/
 instance/*
 travelshot/uploads/images/*

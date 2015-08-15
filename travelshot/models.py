@@ -4,7 +4,9 @@ Model definitions
 
 import datetime
 from sqlalchemy.dialects import sqlite
+from sqlalchemy.schema import CheckConstraint
 from .lib.flask_sqlalchemy import SQLAlchemy
+
 
 db = SQLAlchemy()
 
@@ -13,9 +15,9 @@ class User(db.Model):
     __tablename__ = 'user'
 
     id = db.Column(db.BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), db.Sequence('user_id_seq'), primary_key=True)
-    gplus_id = db.Column(db.String(80))
-    facebook_id = db.Column(db.String(80))
-    email = db.Column(db.String(80))              # Users can deny access to their email address
+    gplus_id = db.Column(db.String(80), unique=True, nullable=True)
+    facebook_id = db.Column(db.String(80), unique=True, nullable=True)
+    email = db.Column(db.String(80))              # Users can deny access to email address
     name = db.Column(db.String(240))
     first_name = db.Column(db.String(80))
     middle_name = db.Column(db.String(80))
@@ -25,6 +27,9 @@ class User(db.Model):
     gender = db.Column(db.String(10))
     link = db.Column(db.String(500))
     verified_email = db.Column(db.Boolean)
+
+    __table_args__ = (CheckConstraint('(gplus_id IS NOT NULL) OR (facebook_id IS NOT NULL)', \
+        name='gplus_fb_id_check'), )
 
     @property
     def serialize(self):
