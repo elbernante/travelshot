@@ -359,6 +359,16 @@ def fbdisconnect():
     return {'success': True}
 
 
+@api.route('/logout/', methods=['GET'])
+def log_out():
+    if login_session['provider'] == 'google':
+        return gdisconnect()
+    elif login_session['provider'] == 'facebook':
+        return fbdisconnect()
+    else:
+        raise BadRequest('Invalid login session.')
+
+
 # TODO: Remove this function
 @api.route('/upload/', methods=['GET', 'POST'])
 @util.format_response
