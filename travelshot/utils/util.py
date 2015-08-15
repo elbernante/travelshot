@@ -11,6 +11,7 @@ from functools import wraps
 from flask import request
 from flask import make_response
 from flask import session as login_session
+from flask import current_app as app
 
 from werkzeug.exceptions import Unauthorized
 
@@ -121,6 +122,11 @@ def format_data(data, data_format):
         formatted = json.dumps(data, ensure_ascii=False)
         content_type = 'application/json'
     return formatted, content_type
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
 
 def to_json(text):

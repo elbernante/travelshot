@@ -19,6 +19,7 @@ db.init_app(app)
 
 from .api import api
 from .api import authentication
+from .api import interface
 
 from .views.pages import pages
 

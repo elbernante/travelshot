@@ -76,6 +76,7 @@ class Item(db.Model):
     author_id = db.Column(db.BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), db.ForeignKey('user.id'), nullable=False)
     date_created = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)
     last_modified = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
+    image_type = db.Column(db.String(5))
     category = db.relationship(Category)
     user = db.relationship(User)
 

@@ -4,13 +4,11 @@ Contains routes for API calls returning
 JSON or XML format.
 '''
 
-import os
 import requests
 
 from urlparse import parse_qs
 
 from flask import request
-from flask import send_from_directory
 from flask import session as login_session
 from flask import current_app as app
 
@@ -27,9 +25,9 @@ from ..utils import datastore as ds
 from . import api
 
 # TODO: Remove this function
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+# def allowed_file(filename):
+#     return '.' in filename and \
+#            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
 
 # TODO: Remove this function
 @api.route('/')
@@ -366,27 +364,27 @@ def log_out():
         raise BadRequest('Invalid login session.')
 
 
-# TODO: Remove this function
-@api.route('/upload/', methods=['GET', 'POST'])
-@util.format_response
-def upload():
-    if request.method == 'POST':
-        print("Request is POST")
-        print('FILE FIELDS:')
-        for f in request.files:
-            print(f)
-        print('FIELD NAMES:')
-        for f in request.form:
-            print(f + ': ' + request.form[f])
-        image = request.files['image']
-        if image and allowed_file(image.filename):
-            image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image.filename))
-        # TODO: Rename filename
-    else:
-        print("Reuqest is GET")
+# # TODO: Remove this function
+# @api.route('/upload/', methods=['GET', 'POST'])
+# @util.format_response
+# def upload():
+#     if request.method == 'POST':
+#         print("Request is POST")
+#         print('FILE FIELDS:')
+#         for f in request.files:
+#             print(f)
+#         print('FIELD NAMES:')
+#         for f in request.form:
+#             print(f + ': ' + request.form[f])
+#         image = request.files['image']
+#         if image and allowed_file(image.filename):
+#             image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image.filename))
+#         # TODO: Rename filename
+#     else:
+#         print("Reuqest is GET")
 
-    print(request.headers['Content-Type'])
-    return {'upload:': 'success'}
+#     print(request.headers['Content-Type'])
+#     return {'upload:': 'success'}
 
 # TODO: Remove this function
 @api.route('/setkey/')
@@ -403,8 +401,8 @@ def set_my_key():
 def get_my_key():
     return login_session.get('my_test_key', 'NO KEY')
 
-# TODO: Remove this function
-@api.route('/uploads/image/<filename>')
-def view_mage(filename):
-    return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
-                               filename)
+# # TODO: Remove this function
+# @api.route('/uploads/image/<filename>')
+# def view_mage(filename):
+#     return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
+#                                filename)
