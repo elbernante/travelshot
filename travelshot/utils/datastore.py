@@ -2,6 +2,8 @@
 Contains utility functions
 '''
 
+from sqlalchemy.exc import IntegrityError
+
 from ..models import db
 from ..models import User
 from ..models import Category
@@ -23,8 +25,11 @@ def create_user(dict_info):
         link=dict_info.get('link', None),
         verified_email=dict_info.get('verified_email', None)
         )
-    db.session.add(user)
-    db.session.commit()
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except IntegrityError:
+        user = None
     return user
 
 def get_user_by_id(user_id):
@@ -43,8 +48,12 @@ def find_user(fb_or_gplus_id):
 ######### Category ############
 def new_category(title):
     cat = Category(name=title)
-    db.session.add(cat)
-    db.session.commit()
+
+    try:
+        db.session.add(cat)
+        db.session.commit()
+    except IntegrityError:
+        cat = None
     return cat
 
 def get_categories():
@@ -60,6 +69,10 @@ def new_item(item_info):
         image_type=item_info.get('image_type', None),
         author_id=item_info.get('author', None)
         )
-    db.session.add(item)
-    db.session.commit()
+
+    try:
+        db.session.add(item)
+        db.session.commit()
+    except:
+        item = None
     return item

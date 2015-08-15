@@ -38,6 +38,9 @@ def upload():
         'author': login_session.get('user_id', None)
         })
 
+    if item is None:
+        raise BadRequest('Invalid upload request.')
+
     image_filename = '{}.{}'.format(item.id, img_type)
     image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
 
