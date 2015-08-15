@@ -16,12 +16,20 @@ from werkzeug.exceptions import Unauthorized
 
 from ..lib.dicttoxml import dicttoxml
 
+from ..models import db
+from ..models import User
+
+
 PY2 = sys.version_info[0] == 2
 
 if PY2:
     xrange = xrange
+    unicode = unicode
+    string_types = (unicode, bytes)
 else:
     xrange = range
+    unicode = str
+    string_types = (str, )
 
 def format_response(func):
     @wraps(func)
@@ -52,14 +60,14 @@ def format_response(func):
         if isinstance(headers_or_code, (dict, list)):
             headers, headers_or_code = headers_or_code, None
 
-        format = 'json'
+        data_format = 'json'
 
         if request and request.args:
-            requested_format = str(request.args.get('format', '')).lower()
+            requested_format = unicode(request.args.get('format', '')).lower()
             if requested_format == 'xml':
-                format = 'xml'
+                data_format = 'xml'
 
-        (formatted, content_type) = format_data(ret_val, format)
+        (formatted, content_type) = format_data(ret_val, data_format)
 
         resp = make_response(formatted, headers_or_code, headers)
         resp.mimetype = content_type
@@ -110,3 +118,6 @@ def to_json(text):
         return json.loads(text, encoding='utf-8')
     except:
         return None
+
+def create_user(ls):
+    pass

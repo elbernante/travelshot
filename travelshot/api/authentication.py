@@ -150,22 +150,22 @@ def _dump_user_info_to_session_XXX(credentials):
 def _dump_user_info_to_session(user_info, provider):
     login_session['provider'] = provider
 
-    login_session['email'] = user_info.get('email', '')
-    login_session['name'] = user_info.get('name', '')
+    login_session['email'] = user_info.get('email', None)
+    login_session['name'] = user_info.get('name', None)
     login_session['first_name'] = user_info.get('given_name', None) \
-        or user_info.get('first_name', None) or ''
-    login_session['middle_name'] = user_info.get('middle_name', '')
+        or user_info.get('first_name', None)
+    login_session['middle_name'] = user_info.get('middle_name', None)
     login_session['last_name'] = user_info.get('family_name', None) \
-        or user_info.get('last_name', None) or ''
-    login_session['locale'] = user_info.get('locale', '')
-    login_session['gender'] = user_info.get('gender', '')
-    login_session['link'] = user_info.get('link', '')
-    login_session['verified_email'] = user_info.get('verified_email', False)
+        or user_info.get('last_name', None)
+    login_session['locale'] = user_info.get('locale', None)
+    login_session['gender'] = user_info.get('gender', None)
+    login_session['link'] = user_info.get('link', None)
+    login_session['verified_email'] = user_info.get('verified_email', None)
 
     # Picture URL in facebook is inside a picture object
-    picture = user_info.get('picture', '')
+    picture = user_info.get('picture', None)
     if isinstance(picture, (dict, list)):
-        picture = picture.get('data', {}).get('url', '')
+        picture = picture.get('data', {}).get('url', None)
 
     login_session['picture'] = picture
 

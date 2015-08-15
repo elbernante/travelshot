@@ -3,7 +3,8 @@ Travel Shot app module initialization
 '''
 
 from flask import Flask
-from .lib.flask_sqlalchemy import SQLAlchemy
+
+from .models import db
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('config')
@@ -14,7 +15,7 @@ try:
 except IOError:
     pass    # No local development config file
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
 from .api import api
 from .api import authentication

@@ -4,7 +4,9 @@ Model definitions
 
 import datetime
 from sqlalchemy.dialects import sqlite
-from . import db
+from .lib.flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 class User(db.Model):
     '''Represents a user'''
