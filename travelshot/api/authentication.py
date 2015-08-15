@@ -213,10 +213,14 @@ def gconnect():
     if user is None:
         user = ds.create_user(login_session)
 
+    login_session['user_id'] = user.id
+
     return user.serialize
 
 def _clean_up_session():
     # remove store login session data
+    login_session['user_id'] = None
+
     login_session['credentials'] = None     # G+ Specific
     login_session['gplus_id'] = None        # G+ Specific
 
@@ -327,6 +331,8 @@ def fbconnect():
     user = ds.get_user_by_facebook_id(login_session['facebook_id'])
     if user is None:
         user = ds.create_user(login_session)
+
+    login_session['user_id'] = user.id
 
     return user.serialize
 
