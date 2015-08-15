@@ -244,8 +244,6 @@ def _clean_up_session():
 @api.route('/gdisconnect/', methods=['GET'])
 @util.format_response
 def gdisconnect():
-    # Only disconnect a connected user.
-    # TODO: @require login
     credentials = login_session.get('credentials')
     if credentials is None:
         raise Unauthorized("User is not signed in.")
@@ -340,8 +338,6 @@ def fbconnect():
 @api.route('/fbdisconnect/', methods=['GET'])
 @util.format_response
 def fbdisconnect():
-    # Only disconnect a connected user.
-    # TODO: @require login
     access_token = login_session.get('access_token')
     facebook_id = login_session['facebook_id']
     if access_token is None:
@@ -360,6 +356,7 @@ def fbdisconnect():
 
 
 @api.route('/logout/', methods=['GET'])
+@util.require_login
 def log_out():
     if login_session['provider'] == 'google':
         return gdisconnect()
@@ -402,6 +399,7 @@ def set_my_key():
 # TODO: Remove this function
 @api.route('/getkey/')
 @util.format_response
+@util.require_login
 def get_my_key():
     return login_session.get('my_test_key', 'NO KEY')
 

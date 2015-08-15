@@ -27,6 +27,7 @@ else:
     unicode = str
     string_types = (str, )
 
+
 def format_response(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -70,6 +71,7 @@ def format_response(func):
         return resp
     return wrapper
 
+
 def validate_token(key):
     def token_validator(func):
         @wraps(func)
@@ -97,8 +99,19 @@ def validate_token(key):
         return validator_wrapper
     return token_validator
 
+
+def require_login(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if login_session.get('user_id', None) is None:
+            raise Unauthorized('Requires to be logged in to perform this operation.')
+        return func(*args, **kwargs)
+    return wrapper
+
+
 def random_key():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
+
 
 def format_data(data, data_format):
     if data_format == 'xml':
@@ -108,6 +121,7 @@ def format_data(data, data_format):
         formatted = json.dumps(data, ensure_ascii=False)
         content_type = 'application/json'
     return formatted, content_type
+
 
 def to_json(text):
     try:
