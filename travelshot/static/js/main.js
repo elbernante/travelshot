@@ -193,7 +193,7 @@ var tsf = (function ($) {
                     && _apis.tsApi.isInitiated()) {
                 self._initStatus = 1;
                 gapi.load('auth2', function() {
-                    auth2 = gapi.auth2.init(APP_GLOBALS.get('gplus_options'));
+                    gapi.auth2.init(APP_GLOBALS.get('gplus_options'));
                     self._initStatus = 2;
                     self.fireEvent('init');
                 });
@@ -383,3 +383,37 @@ $('#facebookSignIn').click(function (event) {
         console.dir(data);
     });
 });
+
+
+$('.imagedropzone').imagedrop({
+    maxFileSize: 8 * 1024 * 1024,
+    onInvalidFile: function (element, file) {
+        console.log("Invavlid file " + file.name || "" + ".");
+    },
+    onChange: function(element, file) {
+        console.log("Change: " + ((file) ? (file.name || 'No File Name') : 'None'));
+    }
+});
+
+$('#dropbutton').on('click', function (event) {
+    console.log($('#dz2').imagedrop('file'));
+});
+
+$('#switchDrop').on('click', function (event) {
+    var i1 = $('#dz1').imagedrop('file');
+    var i2 = $('#dz2').imagedrop('file');
+    $('#dz1').imagedrop('file', i2);
+    $('#dz2').imagedrop('file', i1);
+});
+
+$('#clearDrop').on('click', function (event) {
+   $('#dz2').imagedrop('clearFile');
+});
+
+$('#spreadDrop').on('click', function (event) {
+   var i1 = $('.imagedropzone').imagedrop('file');
+   $('.imagedropzone').imagedrop(i1 ? 'file' : 'clearFile', i1);
+});
+
+
+

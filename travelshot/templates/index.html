@@ -29,15 +29,22 @@
         Description: <input type="text" id='imgDesc'><br>
         <button type="button" id="submitPhoto">Submit</button>
         <hr />
+
         <button id="signinButton">Sign In</button>
         <button id="googleSignIn" disabled>Sign in with Google</button>
-        <button id="facebookSignIn" disabled>Sign in with Facebook</button>
+        <button id="facebookSignIn" disabled>Sign in with Facebook</button><br>
+        <button id="dropbutton">Drop It</button> <button id="switchDrop">Switch It</button> <button id="clearDrop">Clear It</button>
+        <button id="spreadDrop">Spread It</button>
+        <div class="imagedropzone" id="dz1" style="background-color: yellow; width: 300px; height: 300px"></div>
+        <div class="imagedropzone" id="dz2" style="background-color: blue; width: 300px; height: 300px"></div>
+        <div class="imagedropzone" id="dz3" style="background-color: blue; width: 300px; height: 300px"></div>
 
          <!-- Scripts -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="{{ url_for('static', filename='lib/jquery/2.1.4/jquery.min.js') }}"><\/script>')</script>
         <script src="{{ url_for('static', filename='js/plugins.js') }}"></script>
         <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <script>

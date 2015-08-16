@@ -23,7 +23,7 @@
 
 // Place any jQuery/helper plugins in here.
 
-(function($){
+(function($) {
     var pluginName = 'photoupload';
 
     var defaults = {
@@ -194,4 +194,173 @@
         event.stopPropagation();
         event.preventDefault();
     });
-})(jQuery);
+}(jQuery));
+
+(function ($) {
+    var pluginName = 'imagedrop';
+
+    var defaults = {
+        maxFileSize: 0,
+        acceptFiles: ['.jpg', '.jpeg', '.png', '.gif'],
+        onChange: function (element, file) {/*no-op*/},
+        onInvalidFile: function(element, file){/*no-op*/}
+    };
+
+    var utils = {
+        _onChange: function (file) {
+            this.settings.onChange.call(this, this.element, file);
+        },
+
+        _onInvalidFile: function (file) {
+            this.settings.onInvalidFile.call(this, this.element, file);
+        },
+
+        _processInputFileList: function (fileList, imagePlaceHolder) {
+            var self = this;
+            if (fileList && fileList[0]) {
+                utils._processInputFile.call(self, fileList[0], imagePlaceHolder);
+            }
+        },
+
+        _processInputFile: function (aFile, imagePlaceHolder) {
+            var self = this;
+            if (utils.isValidImageFile.call(self, aFile)) {
+                self.file = aFile;
+                utils.showImage.call(self, imagePlaceHolder, aFile);
+                utils._onChange.call(self, aFile);
+            } else {
+                utils._onInvalidFile.call(self, aFile);
+            }
+        },
+
+        isValidImageFile: function (imageFile) {
+
+            if (!imageFile) {
+                return false;
+            }
+
+            if (this.settings.maxFileSize != 0 && imageFile.size > this.settings.maxFileSize) {
+                return false;
+            }
+
+            validExtensions = new RegExp(this.settings.acceptFiles.map(function (str) {
+                return  ((str.match(/^\./)) ? '\\' : '\\.') + str + '$';
+            }).join('|'), 'i');
+            if (!imageFile.type.match(/^image\//) || !imageFile.name.match(validExtensions)) {
+                return false;
+            }
+
+            return true;
+        },
+
+        showImage: function (imgElement, imageFile) {
+            if (window.FileReader ) {
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    imgElement.attr('src', event.target.result);
+                };
+                reader.readAsDataURL(imageFile);
+            } 
+        }
+    };
+
+    var ImageDrop = function (element, options) {
+        this.element = $(element);
+        this.settings = $.extend({}, defaults, options);
+        this.init();
+        return true;
+    };
+
+    ImageDrop.prototype.init = function () {
+        var self = this;
+        var container = self.element;
+        var inputElem = $('<input type="file" accept="image/*" style="display: none">');
+        var imageView = $('<img src="" style="max-width: 100%; max-height: 100%; position: relative; top: 50%">');
+
+
+        container.css('text-align', 'center');
+
+        imageView.css('-webkit-transform', 'translateY(-50%)');
+        imageView.css('-moz-transform', 'translateY(-50%)');
+        imageView.css('transform', 'translateY(-50%)');
+
+        container.append(imageView, inputElem);
+        self.inputField = inputElem;
+        self.imageView = imageView;
+
+        container.on('drop', function (event) {
+            event.stopPropagation();
+            event.preventDefault();
+
+            utils._processInputFileList.call(self, event.originalEvent.dataTransfer.files, imageView);
+        });
+
+        container.on('click', function (event) {
+            inputElem.trigger('click');
+        });
+
+        inputElem.click(function (event) {
+            event.stopPropagation();
+        });
+
+        inputElem.on('change', function (event) {
+            utils._processInputFileList.call(self, this.files, imageView);
+        });
+    };
+
+    ImageDrop.prototype.setFile = function (aFile) {
+        utils._processInputFile.call(this, aFile, this.imageView);
+    };
+
+    ImageDrop.prototype.clearFile = function () {
+        var self = this;
+        if (self.file) {
+            delete self.file;
+            self.imageView.attr('src', '');
+            utils._onChange.call(self);
+        }
+    };
+
+    var _actions = {
+        markUp: function (options) {
+            return this.each(function(index, obj){
+                if (!$.data(this, pluginName)) {
+                    $.data(this, pluginName, new ImageDrop(this, options));
+                }
+            });
+        },
+
+        file: function(aFile) {
+            if ('undefined' === typeof aFile) {
+                var o = this.data(pluginName);
+                return ( o ? o.file : undefined );
+            } else {
+                return this.each(function(index, obj){
+                    var o = $.data(this, pluginName);
+                    if (o) { o.setFile(aFile); }
+                });
+            }
+        },
+
+        clearFile: function() {
+            return this.each(function(index, obj){
+                var o = $.data(this, pluginName);
+                if (o) { o.clearFile(); }
+            });
+        }
+    };
+
+    $.fn.imagedrop = function (action, options) {
+        if ('string' !== typeof action) {
+            options = action;
+            action = 'markUp';
+        }
+        return _actions[action].call(this, options);
+    };
+
+    // Disable Document drag & drop events to prevent opening/downloading the file on browser when we drop them
+    $(document).on('dragenter dragover drop', function (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    });
+}(jQuery));
