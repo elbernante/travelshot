@@ -18,6 +18,7 @@ from ..utils import datastore as ds
 
 from . import api
 
+import json
 
 @api.route('/upload/', methods=['POST'])
 @util.require_login
@@ -47,5 +48,17 @@ def upload():
     item_dict = item.serialize
     item_dict['image_url'] = url_for('pages.view_mage', filename=image_filename)
     return item_dict
+
+@api.route('/tesapi/', methods=['GET', 'POST'])
+@util.format_response
+def test_api_route():
+    print(request.content_type)
+    if request.content_type == 'application/json':
+        print json.dumps(request.json)
+    print(request.data)
+    print("By form:")
+    for k, v in request.form.items():
+        print(k, v)
+    return 'OK'
 
 

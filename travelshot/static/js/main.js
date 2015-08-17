@@ -1,16 +1,3 @@
-// Initiate PhotoUpload plugin
-var pu = $('.photoupload').photoupload({
-    url: '/api/upload/',
-    maxFileSize: 8 * 1024 * 1024,
-    onInvalidFile: function (file) {
-        console.log("Invavlid file " + file.name || "" + ".");
-    },
-    onUploadProgress: function(element, progress) {
-        console.log("Porgess: " + progress);
-    }
-});
-
-
 var tsf = (function ($) {
 
     var util = function ($) {
@@ -348,12 +335,50 @@ var tsf = (function ($) {
 })(jQuery);
 
 // --- UI Scripts ---
+
+// Initiate PhotoUpload plugin
+var pu = $('.photoupload').photoupload({
+    url: '/api/upload/',
+    maxFileSize: 8 * 1024 * 1024,
+    onInvalidFile: function (file) {
+        console.log("Invavlid file " + file.name || "" + ".");
+    },
+    onUploadProgress: function(element, progress) {
+        console.log("Porgess: " + progress);
+    }
+});
+
+
 $('#submitPhoto').on('click', function (event) {
     var cat = $('#imgCat').val();
     var title = $('#imgTitle').val();
     var desck = $('#imgDesc').val();
     pu.data('photoupload').submit(title, cat, desck);
 });
+
+
+$('#ajaxSubmit').on('click', function (event) {
+
+    var d = {
+        title: $('#imgTitle').val(),
+        category: $('#imgCat').val(),
+        description: $('#imgDesc').val(),
+        image: $('#dz1').imagedrop('file')
+    };
+
+    var prog = function () {
+        console.log("PROGRESS LISTENER");
+        console.dir(arguments);
+    }
+
+    var ajaxUpload = new AjaxUpload({
+        'progress': prog,
+        'error': prog
+    });
+
+    ajaxUpload.submit('/api/upload/', d);
+});
+
 
 $('#signinButton').on('click', function (event) {
     $('#googleSignIn').prop('disabled', true);
@@ -368,6 +393,7 @@ $('#signinButton').on('click', function (event) {
     });
 });
 
+
 $('#googleSignIn').click(function (event) {
     tsf.googleLogin(function (data) {
         // TODO: Check for login error
@@ -375,6 +401,7 @@ $('#googleSignIn').click(function (event) {
         console.dir(data);
     });
 });
+
 
 $('#facebookSignIn').click(function (event) {
     // TODO: Check for login error
@@ -395,9 +422,11 @@ $('.imagedropzone').imagedrop({
     }
 });
 
+
 $('#dropbutton').on('click', function (event) {
     console.log($('#dz2').imagedrop('file'));
 });
+
 
 $('#switchDrop').on('click', function (event) {
     var i1 = $('#dz1').imagedrop('file');
@@ -406,9 +435,11 @@ $('#switchDrop').on('click', function (event) {
     $('#dz2').imagedrop('file', i1);
 });
 
+
 $('#clearDrop').on('click', function (event) {
    $('#dz2').imagedrop('clearFile');
 });
+
 
 $('#spreadDrop').on('click', function (event) {
    var i1 = $('.imagedropzone').imagedrop('file');

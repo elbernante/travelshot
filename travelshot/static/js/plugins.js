@@ -196,6 +196,8 @@
     });
 }(jQuery));
 
+
+/////////////////// Image Drop Plugin ///////////////////
 (function ($) {
     var pluginName = 'imagedrop';
 
@@ -364,3 +366,139 @@
         event.preventDefault();
     });
 }(jQuery));
+/////////////////// END: Image Drop Plugin ///////////////////
+
+/////////////////// Ajax Upload Plugin ///////////////////
+(function (w, $) {
+    var className = 'AjaxUpload';
+
+    var defaults = {
+        url: '/',
+        type: 'POST',
+        cache: false,
+        contentType: false,
+        processData: false,
+        headers: {},
+        progress: function(xhrObj, percent) {/*no-op*/},
+        success: function(data, textStatus, jqXHR) {/*no-op*/},
+        error: function(jqXHR, textStatus, errorThrown) {/*no-op*/},
+        complete: function(jqXHR, textStatus) {/*no-op*/}
+    };
+
+    var util = {
+        fireEvent: function (key) {
+            var self = this;
+            var args = Array.prototype.slice.call(arguments, 1);
+
+            self.settings[key].apply(self, args);
+            $.each(self._listeners[key], function (index, obj) {
+                obj.apply(self, args);
+            });
+        }
+    };
+
+    var AjaxUpload = function (options) {
+        this.settings = $.extend({}, defaults, options);
+        this._listeners = {
+            'progress': [],
+            'success': [],
+            'error': [],
+            'complete': []
+        };
+        return this;
+    };
+
+    AjaxUpload.prototype.options = function (options) {
+        if ('undefined' !== options) {
+            $.extend(this.settings, options);
+        }
+        return this.settings;
+    };
+
+    AjaxUpload.prototype.on = function (key, callback) {
+        var self = this;
+        if ('function' === typeof callback) {
+            self._listeners[key].push(callback);
+        }
+        return self;
+    };
+
+    AjaxUpload.prototype.off = function (key, callbackRef) {
+        var self = this;
+        var index = self._listeners[key].indexOf(callbackRef);
+        if (index > -1) {
+            self._listeners[key].splice(index, 1);
+        }
+        return self;
+    };
+
+    AjaxUpload.prototype.abort = function () {
+        var self = this;
+        if (self.xhr) {
+            xhr.abort();
+        }
+        return self;
+    };
+
+    AjaxUpload.prototype.submit = function (url, data) {
+        var self = this;
+
+        var u = ('string' === typeof url) ? url : self.settings.url;
+        var d = ('object' === typeof url) ? url : data || {};
+
+        var formData;
+        if (!self.settings.contentType) {
+            formData = new FormData();
+            $.each(d, function (k ,o) {
+                if ('object' === typeof o && o['file'] && o['filename']) {
+                    formData.append(k, o['file'], o['filename']);
+                } else {
+                    formData.append(k, o);
+                }
+            });
+        } else {
+            formData = ('application/json' === self.settings.contentType) ?
+                JSON.stringify(d) : d;
+        }
+
+        self.xhr = $.ajax({
+            url: u,
+            type: self.settings.type,
+            data: formData,
+            cache: self.settings.cache,
+            headers: self.settings.headers,
+            contentType: self.settings.contentType,
+            processData: self.settings.processData,
+            xhr: function () {
+                var xhrObj = $.ajaxSettings.xhr();
+                if (xhrObj.upload) {
+                    xhrObj.upload.addEventListener('progress', function (event) {
+                        var percent = 0;
+                        if (event.lengthComputable) {
+                            var current = event.loaded || event.position;
+                            var total = event.total || event.totalSize;
+                            percent = (current / total) * 100;
+                        }
+                        util.fireEvent.call(self, 'progress', xhrObj, percent);
+                    }, false);
+                }
+                return xhrObj;
+            },
+            success: function (data, textStatus, jqXHR) {
+                util.fireEvent.call(self, 'success', data, textStatus, jqXHR);
+            },
+            error: function (jqXHR, textStatus, errorThrown) {
+                util.fireEvent.call(self, 'error', jqXHR, textStatus, errorThrown);
+            },
+            complete: function (jqXHR, textStatus) {
+                util.fireEvent.call(self, 'complete', jqXHR, textStatus);
+            }
+        });
+
+        return self;
+    };
+
+    w[className] = w[className] || AjaxUpload;
+
+}(window, jQuery));
+/////////////////// END: Ajax Upload Plugin ///////////////////
