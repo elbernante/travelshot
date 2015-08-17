@@ -353,11 +353,15 @@
     };
 
     $.fn.imagedrop = function (action, options) {
-        if ('string' !== typeof action) {
-            options = action;
-            action = 'markUp';
+        var args = arguments,
+            act = 'markUp';
+
+        if (arguments.length > 0 && 'string' === typeof arguments[0]) {
+            act = arguments[0];
+            args = Array.prototype.slice.call(arguments, 1);
         }
-        return _actions[action].call(this, options);
+
+        return _actions[act].apply(this, args);
     };
 
     // Disable Document drag & drop events to prevent opening/downloading the file on browser when we drop them
