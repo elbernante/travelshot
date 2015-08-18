@@ -21,6 +21,7 @@ from . import api
 import json
 
 @api.route('/upload/', methods=['POST'])
+@util.csrf_protect_enable
 @util.require_login
 @util.format_response
 def upload():
@@ -60,5 +61,10 @@ def test_api_route():
     for k, v in request.form.items():
         print(k, v)
     return 'OK'
+
+
+# fh = open("imageToSave.png", "wb")
+# fh.write(imgData.decode('base64'))
+# fh.close()
 
 

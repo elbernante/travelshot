@@ -6,7 +6,11 @@ JSON or XML format.
 
 import requests
 
-from urlparse import parse_qs
+try:
+    from urlparse import parse_qs
+except ImportError:
+    # python 3
+    from urllib.parse import parse_qs
 
 from flask import request
 from flask import session as login_session
@@ -46,6 +50,7 @@ def nilatch():
 
 
 @api.route('/requestlogin/', methods=['GET'])
+@util.csrf_protect_enable
 @util.format_response
 def login_key():
     '''Docstring for login_key goes here'''
@@ -170,7 +175,7 @@ def _dump_user_info_to_session(user_info, provider):
 
 
 @api.route('/gconnect/', methods=['POST'])
-@util.validate_token('X-Ts-Login-Token')
+@util.csrf_protect_enable
 @util.format_response
 def gconnect():
     # Read submitted authorization code
@@ -295,7 +300,7 @@ def _fb_get_user_info(access_token):
 
 
 @api.route('/fbconnect/', methods=['POST'])
-@util.validate_token('X-Ts-Login-Token')
+@util.csrf_protect_enable
 @util.format_response
 def fbconnect():
     # Read access token

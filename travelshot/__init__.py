@@ -5,6 +5,7 @@ Travel Shot app module initialization
 from flask import Flask
 
 from .models import db
+from .utils.util import csrf
 
 app = Flask(__name__, instance_relative_config=True)
 app.config.from_object('config')
@@ -16,6 +17,7 @@ except IOError:
     pass    # No local development config file
 
 db.init_app(app)
+csrf.init_app(app)
 
 from .api import api
 from .api import authentication

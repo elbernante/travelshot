@@ -6,6 +6,7 @@
         <title>Travel Shot</title>
         <meta name="description" content="Travel photo sharing">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
         <!-- Place favicon.ico in the root directory -->
@@ -35,7 +36,7 @@
         <button id="googleSignIn" disabled>Sign in with Google</button>
         <button id="facebookSignIn" disabled>Sign in with Facebook</button><br>
         <button id="dropbutton">Drop It</button> <button id="switchDrop">Switch It</button> <button id="clearDrop">Clear It</button>
-        <button id="spreadDrop">Spread It</button>
+        <button id="spreadDrop">Spread It</button> <button id="getDrop">Get It</button>
         <div class="imagedropzone" id="dz1" style="background-color: yellow; width: 300px; height: 300px"></div>
         <div class="imagedropzone" id="dz2" style="background-color: blue; width: 300px; height: 300px"></div>
         <div class="imagedropzone" id="dz3" style="background-color: blue; width: 300px; height: 300px"></div>

@@ -16,18 +16,18 @@ from flask import current_app as app
 from werkzeug.exceptions import Unauthorized
 
 from ..lib.dicttoxml import dicttoxml
+from ..lib.flask_csrf.csrf import CsrfProtect
 
 PY2 = sys.version_info[0] == 2
 
 if PY2:
     xrange = xrange
-    unicode = unicode
-    string_types = (unicode, bytes)
+    text_type = unicode
 else:
     xrange = range
-    unicode = str
-    string_types = (str, )
+    text_type = str
 
+csrf = CsrfProtect()
 
 def format_response(func):
     @wraps(func)
@@ -61,7 +61,7 @@ def format_response(func):
         data_format = 'json'
 
         if request and request.args:
-            requested_format = unicode(request.args.get('format', '')).lower()
+            requested_format = text_type(request.args.get('format', '')).lower()
             if requested_format == 'xml':
                 data_format = 'xml'
 
@@ -99,6 +99,15 @@ def validate_token(key):
             return func(*args, **kwargs)
         return validator_wrapper
     return token_validator
+
+
+def csrf_protect_enable(func):
+    '''Decorator for to check for csrf token'''
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        csrf.protect();
+        return func(*args, **kwargs)
+    return wrapper
 
 
 def require_login(func):

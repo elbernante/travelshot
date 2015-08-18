@@ -42,6 +42,7 @@ var tsf = (function ($) {
             $.ajax({
                 type: 'GET',
                 url: '/api/requestlogin/',
+                headers: {'X-CSRFToken': g['csrfToken']},
                 dataType: 'json',
                 success: function(data, textStatus, jqXHR) {
                     util.functionify(successCallback)(data);
@@ -54,6 +55,9 @@ var tsf = (function ($) {
 
         return {
             init: function (callback) {
+                if (!g['csrfToken']) {
+                    g['csrfToken'] = $('meta[name=csrf-token]').attr('content');
+                }
                 requestKeys(function (data) {
                     for (key in data) {
                         g[key] = data[key];
@@ -62,12 +66,12 @@ var tsf = (function ($) {
                     util.functionify(callback)(data);
                 }, callback);
             },
-            refreshKeys: function (callback) {
-                requestKeys(function (data) {
-                    g['state'] = data['state'];
-                    util.functionify(callback)(data);
-                }, callback);
-            },
+            // refreshKeys: function (callback) {
+            //     requestKeys(function (data) {
+            //         g['state'] = data['state'];
+            //         util.functionify(callback)(data);
+            //     }, callback);
+            // },
             asyncGet: function (key, callback) {
                 getRequestQueue.push({key: key, callback: callback});
                 processQueue();
@@ -255,13 +259,13 @@ var tsf = (function ($) {
     /////////////////////// END API LOADING HANLDER ///////////////////////
 
     return {
-        refreshLoginToken: function (callback) {
+        initAuthApis: function (callback) {
             var self = this;
             if (apiMonitor.gApi.isInitiated() && apiMonitor.fbApi.isInitiated()) {
-                APP_GLOBALS.refreshKeys(callback);
+                util.functionify(callback)();
             } else {
                 apiMonitor.tsApi.on('complete', function () {
-                    APP_GLOBALS.refreshKeys(callback);
+                    util.functionify(callback)();
                 }, true);
                 apiMonitor.tsApi.initApi();
             }
@@ -278,7 +282,7 @@ var tsf = (function ($) {
                     $.ajax({
                         type: 'POST',
                         url: '/api/gconnect/',
-                        headers: {'X-Ts-Login-Token': APP_GLOBALS.get('state')},
+                        headers: {'X-CSRFToken': APP_GLOBALS.get('csrfToken')},
                         processData: false,
                         contentType: 'application/octet-stream; charset=utf-8',
                         data: authResult['code'],
@@ -310,7 +314,7 @@ var tsf = (function ($) {
                     $.ajax({
                         type: 'POST',
                         url: '/api/fbconnect/',
-                        headers: {'X-Ts-Login-Token': APP_GLOBALS.get('state')},
+                        headers: {'X-CSRFToken': APP_GLOBALS.get('csrfToken')},
                         processData: false,
                         contentType: 'application/octet-stream; charset=utf-8',
                         data: response.authResponse['accessToken'],
@@ -330,6 +334,21 @@ var tsf = (function ($) {
             }, {
                 scope: 'public_profile email'
             });
+        },
+
+        newItem: function (itemObj) {
+            var prog = function () {
+                console.log("PROGRESS LISTENER");
+                console.dir(arguments);
+            }
+
+            var ajaxUpload = new AjaxUpload({
+                headers: {'X-CSRFToken': APP_GLOBALS.get('csrfToken')},
+                progress: prog,
+                error: prog
+            });
+
+            ajaxUpload.submit('/api/upload/', $.extend({}, itemObj));
         }
     }
 })(jQuery);
@@ -366,30 +385,16 @@ $('#ajaxSubmit').on('click', function (event) {
         image: $('#dz1').imagedrop('file')
     };
 
-    var prog = function () {
-        console.log("PROGRESS LISTENER");
-        console.dir(arguments);
-    }
-
-    var ajaxUpload = new AjaxUpload({
-        'progress': prog,
-        'error': prog
-    });
-
-    ajaxUpload.submit('/api/upload/', d);
+    tsf.newItem(d);
 });
 
 
 $('#signinButton').on('click', function (event) {
     $('#googleSignIn').prop('disabled', true);
     $('#facebookSignIn').prop('disabled', true);
-    tsf.refreshLoginToken(function (data) {
-        if (!data['error']) {
-            $('#googleSignIn').prop('disabled', false);
-            $('#facebookSignIn').prop('disabled', false);
-        } else {
-            alert('TODO: Show error to user. Error: ' + data['error']);
-        }
+    tsf.initAuthApis(function (data) {
+        $('#googleSignIn').prop('disabled', false);
+        $('#facebookSignIn').prop('disabled', false);
     });
 });
 
@@ -446,5 +451,17 @@ $('#spreadDrop').on('click', function (event) {
    $('.imagedropzone').imagedrop(i1 ? 'file' : 'clearFile', i1);
 });
 
+$('#getDrop').on('click', function (event) {
+    var i1 = $('#dz1').imagedrop('file');
+    var reader = new FileReader();
+
+    console.log(i1 instanceof File);
+    reader.onload = function (e) {
+        //console.log(this.result);
+        console.log(btoa(this.result));
+    }
+    //reader.readAsDataURL(i1);
+    reader.readAsBinaryString(i1);
+});
 
 
