@@ -10,6 +10,8 @@ from flask import render_template
 from flask import send_from_directory
 from flask import current_app as app
 
+from ..utils.datastore import get_item_with_id_salt_type_or_404
+
 pages = Blueprint('pages', __name__)
 
 
@@ -25,7 +27,12 @@ def upload():
     return render_template('upload.html')
 
 
-@pages.route('/image/<filename>')
-def view_mage(filename):
+@pages.route('/image/<key>/<filename>')
+def view_mage(key, filename):
+    id = ''
+    ext = ''
+    if '.' in filename:
+        (id, ext) = filename.rsplit('.', 1)
+    get_item_with_id_salt_type_or_404(id, key, ext)
     return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
                                filename)

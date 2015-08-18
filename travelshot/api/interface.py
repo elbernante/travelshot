@@ -37,7 +37,8 @@ def upload():
         'category': request.form.get('category', None),
         'description': request.form.get('description', None),
         'image_type': img_type,
-        'author': login_session.get('user_id', None)
+        'author': login_session.get('user_id', None),
+        'salt': util.random_key()
         })
 
     if item is None:
@@ -47,7 +48,7 @@ def upload():
     image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
 
     item_dict = item.serialize
-    item_dict['image_url'] = url_for('pages.view_mage', filename=image_filename)
+    item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
     return item_dict
 
 @api.route('/tesapi/', methods=['GET', 'POST'])

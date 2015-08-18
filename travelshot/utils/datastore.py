@@ -67,7 +67,8 @@ def new_item(item_info):
         category_id=item_info.get('category', None),
         description=item_info.get('description', None),
         image_type=item_info.get('image_type', None),
-        author_id=item_info.get('author', None)
+        author_id=item_info.get('author', None),
+        salt=item_info.get('salt', None)
         )
 
     try:
@@ -76,3 +77,6 @@ def new_item(item_info):
     except:
         item = None
     return item
+
+def get_item_with_id_salt_type_or_404(id, salt, image_type):
+    return Item.query.filter_by(id=id, salt=salt, image_type=image_type).first_or_404()

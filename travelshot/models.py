@@ -77,6 +77,7 @@ class Item(db.Model):
     date_created = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow, nullable=False)
     last_modified = db.Column(db.DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow, nullable=False)
     image_type = db.Column(db.String(5))
+    salt = db.Column(db.String(32))
     category = db.relationship(Category)
     user = db.relationship(User)
 
