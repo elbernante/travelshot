@@ -12,6 +12,7 @@ from flask import session as login_session
 from flask import current_app as app
 
 from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import Unauthorized
 
 from ..utils import util
 from ..utils import datastore as ds
@@ -20,11 +21,11 @@ from . import api
 
 import json
 
-@api.route('/upload/', methods=['POST'])
+@api.route('/item/new/', methods=['POST'])
 @util.csrf_protect_enable
 @util.require_login
 @util.format_response
-def upload():
+def upload_new_item():
 
     image = request.files.get('image', None)
     if image is None or not util.allowed_file(image.filename):
@@ -50,6 +51,57 @@ def upload():
     item_dict = item.serialize
     item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
     return item_dict
+
+
+@api.route('/item/edit/<item_id>/', methods=['POST'])
+@util.csrf_protect_enable
+@util.require_login
+@util.format_response
+def edit_item(item_id):
+
+    if request.content_type == 'application/json':
+        data = request.json
+    else:
+        data = request.form
+
+    if data is None:
+        raise BadRequest('Invalid edit request.')
+
+    if item_id != data.get('item_id', None):
+        raise BadRequest('Invalid item.')
+
+    item = ds.get_item_by_id(item_id)
+    if item is None:
+        raise BadRequest('Invalid item.')
+
+    if item.author_id != login_session.get('user_id'):
+        raise Unauthorized('Edit access denied.')
+
+    item.title = new_info.get('title', None) or item.title
+    item.category_id = new_info.get('category', None) or item.category_id
+    item.description = new_info.get('description', None) or item.description
+
+    # Check if image was changed
+    image = request.files.get('image', None)
+    if image is not None:
+        if not util.allowed_file(image.filename):
+            raise BadRequest('Invalid image.')
+
+        img_type = image.filename.rsplit('.', 1)[1]
+        item.image_type = img_type
+
+    item = ds.save_item(item)
+    if item is None:
+        raise BadRequest('Error updating item.')
+
+    image_filename = '{}.{}'.format(item.id, item.image_type)
+    if image is not None:
+        image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
+
+    item_dict = item.serialize
+    item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
+    return item_dict
+
 
 @api.route('/tesapi/', methods=['GET', 'POST'])
 @util.format_response

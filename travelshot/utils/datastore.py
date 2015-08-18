@@ -74,9 +74,20 @@ def new_item(item_info):
     try:
         db.session.add(item)
         db.session.commit()
-    except:
+    except IntegrityError:
         item = None
     return item
+
+def save_item(item):
+    try:
+        db.session.add(item)
+        db.session.commit()
+        return item
+    except IntegrityError:
+        return  None
+
+def get_item_by_id(item_id):
+    return Item.query.filter_by(id=item_id).first()
 
 def get_item_with_id_salt_type_or_404(id, salt, image_type):
     return Item.query.filter_by(id=id, salt=salt, image_type=image_type).first_or_404()

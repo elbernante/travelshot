@@ -348,7 +348,7 @@ var tsf = (function ($) {
                 error: prog
             });
 
-            ajaxUpload.submit('/api/upload/', $.extend({}, itemObj));
+            ajaxUpload.submit('/api/item/new/', $.extend({}, itemObj));
         }
     }
 })(jQuery);
