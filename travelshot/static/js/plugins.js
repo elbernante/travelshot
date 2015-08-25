@@ -506,3 +506,190 @@
 
 }(window, jQuery));
 /////////////////// END: Ajax Upload Plugin ///////////////////
+
+/////////////////// Slide Show Plugin ///////////////////
+(function ($) {
+    var pluginName = 'slideshow';
+
+    var defaults = {
+        duration: 7000
+    };
+
+    var util = {
+        markUpImage: function (img) {
+            var wrapped = img.addClass('slide-show-img').wrap('<div class="slide-show-img-wrap"></div>')
+            return wrapped.parent();
+        },
+
+        showNext: function () {
+            var self = this;
+            if (0 === self.images.length) {
+                self.currentIndex = -1;
+                self.isPlaying = false;
+                return;
+            }
+
+            if (self.currentIndex === -1) {
+                self.currentIndex = 0;
+                self.images[self.currentIndex].addClass('slide-show-img-show');
+            }
+
+            self.player = setTimeout(function () {
+                var nextIndex = self.currentIndex + 1;
+                nextIndex = (nextIndex >= self.images.length) ? 0 : nextIndex;
+                self.images[self.currentIndex].removeClass('slide-show-img-show');
+                self.images[nextIndex].addClass('slide-show-img-show');
+                self.currentIndex = nextIndex;
+                util.showNext.call(self);
+            }, self.settings.duration);
+
+            
+            return self;
+        }
+    };
+
+    var SlideShow = function (element, options) {
+        var self = this;
+        this.element = $(element);
+        this.settings = $.extend({}, defaults, options);
+        this.images = [];
+        this.isPlaying = false;
+        this.currentIndex = -1;
+
+        this.init();
+
+        return true;
+    };
+
+    SlideShow.prototype.init = function () {
+        var self = this;
+        self.element.addClass('slide-show-container');
+
+        var images = self.element.find('img');
+        $.each(images, function (i, o) {
+            self.images.push(util.markUpImage.call(self, $(o)));
+        });
+    };
+
+    SlideShow.prototype.start = function () {
+        var self = this;
+        if (!self.isPlaying) {
+            self.isPlaying = true;
+            util.showNext.call(self);
+        }
+        return self;
+    };
+
+    SlideShow.prototype.stop = function () {
+        var self = this;
+        clearTimeout(self.player);
+        self.isPlaying = false;
+        return self;
+    };
+
+    var _actions = {
+        markUp: function (options) {
+            return this.each(function(index, obj){
+                if (!$.data(this, pluginName)) {
+                    $.data(this, pluginName, new SlideShow(this, options));
+                }
+            });
+        },
+
+        start: function () {
+            return this.each(function(index, obj){
+                var o = $.data(this, pluginName);
+                if (o) { o.start(); }
+            });
+        },
+
+        stop: function () {
+            return this.each(function(index, obj){
+                var o = $.data(this, pluginName);
+                if (o) { o.stop(); }
+            });
+        }
+    };
+
+    $.fn.slideshow = function (action, options) {
+        var args = arguments,
+            act = 'markUp';
+
+        if (arguments.length > 0 && 'string' === typeof arguments[0]) {
+            act = arguments[0];
+            args = Array.prototype.slice.call(arguments, 1);
+        }
+
+        return _actions[act].apply(this, args);
+    };
+
+}(jQuery));
+/////////////////// END: Slide Show Plugin ///////////////////
+
+/////////////////// Parallax Plugin ///////////////////
+(function ($) {
+    var pluginName = 'parallax';
+
+    var defaults = {};
+
+    var util = {
+        parallaxScroll: function (viewPoint) {
+            var h = this.parallaxView.height();
+            if (viewPoint > h) {
+                return;
+            }
+
+            var dh = this.parallaxLayer.height() - h,
+                tp = (viewPoint/h) * dh;
+            this.parallaxView.scrollTop(dh - tp);
+        }
+    };
+
+    var Parallax = function (element, options) {
+        var self = this;
+        this.element = $(element);
+        this.settings = $.extend({}, defaults, options);
+
+        this.init();
+
+        return true;
+    };
+
+    Parallax.prototype.init = function () {
+        var self = this;
+        self.parallaxView = $('<div class="parallax_view"></div>'),
+        self.parallaxLayer = $('<div class="parallax_layer"></div>');
+
+        self.parallaxLayer.append(self.element.contents());
+        self.parallaxView.append(self.parallaxLayer);
+        self.element.append(self.parallaxView);
+
+        $(window).on('scroll', function (event) {
+            util.parallaxScroll.call(self, $(window).scrollTop());
+        });
+        util.parallaxScroll.call(self, $(window).scrollTop());
+    };
+
+    var _actions = {
+        markUp: function (options) {
+            return this.each(function(index, obj){
+                if (!$.data(this, pluginName)) {
+                    $.data(this, pluginName, new Parallax(this, options));
+                }
+            });
+        }
+    };
+
+    $.fn.parallax = function (action, options) {
+        var args = arguments,
+            act = 'markUp';
+
+        if (arguments.length > 0 && 'string' === typeof arguments[0]) {
+            act = arguments[0];
+            args = Array.prototype.slice.call(arguments, 1);
+        }
+
+        return _actions[act].apply(this, args);
+    };
+}(jQuery));
+/////////////////// END: Parallax Plugin ///////////////////

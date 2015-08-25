@@ -97,20 +97,298 @@ textarea {
 
 
 
+/************************ Navigation Bar ************************/
+/* Normal/Shrink navbar */
+.navbar {
+    background-color: #FF5108;
+    height: 50px;
+}
+
+.navbar-header .navbar-brand img {
+    position: absolute;
+    height: 25px;
+    width: auto;
+}
+
+.navbar-header .navbar-brand img:last-child {
+    opacity: 1;
+}
+
+.navbar-header .navbar-brand img:last-child {
+    opacity: 0;
+}
+
+.navbar,
+.navbar-header .navbar-brand img,
+.navbar ul > li{
+    -webkit-transition: all 0.2s ease-in-out;
+       -moz-transition: all 0.2s ease-in-out;
+         -o-transition: all 0.2s ease-in-out;
+            transition: all 0.2s ease-in-out;
+}
+
+.navbar .btn{
+    margin-left:5px;
+}
+
+/* Bigger clear navbar*/
+.navbar-grow {
+    background: transparent;
+    height: 100px;
+    border-width: 0px;
+}
+
+.navbar-grow .navbar-header .navbar-brand img {
+    height: 60px;
+    width: auto;
+}
+
+.navbar-grow .navbar-header .navbar-brand img:last-child {
+    opacity: 0;
+}
+
+.navbar-grow .navbar-header .navbar-brand img:last-child {
+    opacity: 1;
+}
+
+.navbar-grow ul > li{
+    padding-top: 20px;
+}
+
+
+/************************ END: Navigation Bar ************************/
 
 
 
 
+/************************ Cover ************************/
+.jumbotron {
+    background-color: #4F4F4F;
+    padding: 0px;
+    height: 70vh;
+    min-height: 300px;
+}
+
+.jumbotron .container {
+    padding: 0px;
+    width: 100%;
+    height: 100%;
+    padding-bottom: 6px;
+    background-color: #FF5108;
+}
+
+.featured_shots {
+    width: 100%;
+    height: 100%;
+    background-color: #FFF;
+}
+
+.parallax_view {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: hidden; 
+}
+
+.parallax_view .parallax_layer {
+    width: 100%;
+    height: 130%;
+}
+
+.slide-show-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.slide-show-img-wrap {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+
+    -webkit-transition: all 2s ease-in-out;
+       -moz-transition: all 2s ease-in-out;
+         -o-transition: all 2s ease-in-out;
+            transition: all 2s ease-in-out;
+}
+
+.slide-show-img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%;
+}
 
 
+.slide-show-img-show {
+    opacity: 1;
+}
+
+.fronter {
+    background: transparent;
+    width: 100%;
+    height: 200px;
+    text-align: center;
+    -webkit-transform: translateY(-120%);
+       -moz-transform: translateY(-120%);
+         -o-transform: translateY(-120%);
+            transform: translateY(-120%);
+}
+
+.fronter h1 {
+    color: #FF5108;
+    text-shadow: 2px 2px 12px #000000;
+}
+
+.fronter h3 {
+    color: #FFF;
+    text-shadow: 2px 2px 4px #000000;
+}
+/************************ END: Cover ************************/
 
 
+.row {
+    padding-bottom: 200vh;
+}
 
 
+.rotate-90 {
+    -webkit-transform: rotate(90.0deg);
+       -moz-transform: rotate(90.0deg);
+         -o-transform: rotate(90.0deg);
+            transform: rotate(90.0deg);
+}
 
 
+.panel {
+    border: 0px solid transparent
+}
+
+.panel-default>.panel-heading {
+    color: #FF5108;
+    background: transparent;
+    border-color: #FF5108;
+    padding: 10px 15px 0px 15px;
+}
+
+.panel-heading .btn-tool {
+    position: relative;
+    float: right;
+}
+
+/* ---- isotope ---- */
+.grid * {
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+       -o-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+.grid {
+    background: #FFF;
+}
+
+/* clear fix */
+.grid:after {
+    content: '';
+    display: block;
+    clear: both;
+}
+
+/* ---- .grid-item ---- */
+.grid-sizer,
+.grid-item {
+    width: 33.33%;
+}
+
+.grid-item {
+    float: left;
+}
+
+.grid-item img {
+    display: block;
+    max-width: 100%;
+}
 
 
+.grid-item .overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.grid-item .overlay .overlay-dimmer {
+    position: absolute;
+    top: -30px;
+    right: 0px;
+    bottom: -30px;
+    left: 0px;
+    opacity: 0;
+
+    -webkit-transition: all 0.3s ease-in-out; 
+       -moz-transition: all 0.3s ease-in-out;
+         -o-transition: all 0.3s ease-in-out;
+            transition: all 0.3s ease-in-out;
+
+    background: -moz-radial-gradient(center, ellipse cover,  rgba(0,0,0,0) 0%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.2) 100%); /* FF3.6+ */
+    background: -webkit-gradient(radial, center center, 0px, center center, 100%, color-stop(0%,rgba(0,0,0,0)), color-stop(50%,rgba(0,0,0,0)), color-stop(100%,rgba(0,0,0,0.2))); /* Chrome,Safari4+ */
+    background: -webkit-radial-gradient(center, ellipse cover,  rgba(0,0,0,0) 0%,rgba(0,0,0,0) 50%,rgba(0,0,0,0.2) 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-radial-gradient(center, ellipse cover,  rgba(0,0,0,0) 0%,rgba(0,0,0,0) 50%,rgba(0,0,0,0.2) 100%); /* Opera 12+ */
+    background: -ms-radial-gradient(center, ellipse cover,  rgba(0,0,0,0) 0%,rgba(0,0,0,0) 50%,rgba(0,0,0,0.2) 100%); /* IE10+ */
+    background: radial-gradient(ellipse at center,  rgba(0,0,0,0) 0%,rgba(0,0,0,0) 50%,rgba(0,0,0,0.2) 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#00000000', endColorstr='#33000000',GradientType=1 ); /* IE6-9 fallback on horizontal gradient */
+}
+
+.grid-item .overlay .overlay-dimmer:hover {
+    opacity: 1;
+    top: 0px;
+    bottom: 0px;
+}
+
+.grid-item .overlay .item-author {
+    position: absolute;
+    width: 100%;
+    height: 25px;
+    top: 4px;
+    color: #FFF;
+    padding: 2px 8px 2px 8px;
+    text-align: right;
+    text-shadow: 0px 0px 2px #000000;
+     white-space: nowrap;
+}
+
+.grid-item .overlay .item-author span {
+    padding-right: 8px;
+}
+
+.grid-item .overlay .item-author-img {
+    float: right;
+    height: 25px;
+    width: 25px;
+}
+
+.grid-item .overlay .item-author-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.grid-item .overlay .item-title {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 25px;
+    bottom: 0;
+    color: #FFF;
+    padding: 2px 8px 2px 8px;
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis; 
+}
 /* ==========================================================================
    Helper classes
    ========================================================================== */

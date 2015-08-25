@@ -16,6 +16,10 @@ def index():
     # return redirect(url_for('pages.index'))
     return render_template('index.html')
 
+@app.route('/favicon.ico')
+def favicon():
+    return app.send_static_file('images/favicon.ico')
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404

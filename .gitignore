@@ -25,3 +25,15 @@ travelshot/uploads/images/*
 ##################
 fb_client_secrets.json
 g_client_secrets.json
+
+
+# Temporary ignores
+####################
+travelshot/static/images/cover_1.jpg
+travelshot/static/images/cover_2.jpg
+travelshot/static/images/cover_3.jpg
+travelshot/static/images/rss_button.png
+travelshot/static/images/travelshot-logo.png
+travelshot/static/images/travelshot-logo_2.png
+travelshot/static/js/mainxxx.js
+travelshot/templates/indexxx.html

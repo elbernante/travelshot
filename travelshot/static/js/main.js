@@ -351,117 +351,106 @@ var tsf = (function ($) {
             ajaxUpload.submit('/api/item/new/', $.extend({}, itemObj));
         }
     }
-})(jQuery);
+}(jQuery));
+
 
 // --- UI Scripts ---
+(function (w, d, $) {
+    var $w = $(w),
+        $d = $(d);
 
-// Initiate PhotoUpload plugin
-var pu = $('.photoupload').photoupload({
-    url: '/api/upload/',
-    maxFileSize: 8 * 1024 * 1024,
-    onInvalidFile: function (file) {
-        console.log("Invavlid file " + file.name || "" + ".");
-    },
-    onUploadProgress: function(element, progress) {
-        console.log("Porgess: " + progress);
-    }
-});
+    $(function (){
+
+        // Navbar animation
+        var navbarAnimation = function () {
+            var navBarElem = $('nav.navbar'),
+                isAnimationInQueue = false,
+                triggerPoint = 100;
+
+            var animateNavbar = function () {
+                var atPoint = $w.scrollTop();
+
+                if (atPoint > triggerPoint) {
+                    navBarElem.removeClass('navbar-grow');
+                } else {
+                    navBarElem.addClass('navbar-grow');
+                }
+                isAnimationInQueue = false;
+            };
+
+            $w.on('scroll', function (event) {
+                if (!isAnimationInQueue) {
+                    isAnimationInQueue = true;
+                    setTimeout(animateNavbar, 250);
+                }
+            });
+            animateNavbar();
+        }();
+
+        var parl = $('.featured_shots').parallax();
+        var banner = $('.slideshow').slideshow().slideshow('start');
+
+        // init Isotope
+        var $grid = $('.grid').isotope({
+            itemSelector: '.grid-item',
+            percentPosition: true,
+            masonry: {
+                columnWidth: '.grid-sizer'
+            }
+        });
+        
+
+        $w.load(function () {
+            $grid.isotope('layout');
+        });
 
 
-$('#submitPhoto').on('click', function (event) {
-    var cat = $('#imgCat').val();
-    var title = $('#imgTitle').val();
-    var desck = $('#imgDesc').val();
-    pu.data('photoupload').submit(title, cat, desck);
-});
+        var homePage = new Segue.Page('Home Page');
+        Segue.loadPage(homePage);
 
+        $('#signin').on('click', function (evt) {
+            Segue.loadPage(new Segue.Page('Login Page'), '/pages/login');
+        });
 
-$('#ajaxSubmit').on('click', function (event) {
+        $('#upload').on('click', function (evt) {
+            //w.history.pushState({tsPage: 'another index page'}, 'going to upload page', '/pages/upload/');
+            Segue.loadPage(new Segue.Page('Upload Page'), '/pages/upload');
+        });
 
-    var d = {
-        title: $('#imgTitle').val(),
-        category: $('#imgCat').val(),
-        description: $('#imgDesc').val(),
-        image: $('#dz1').imagedrop('file')
-    };
+        var myModel = new function () {
+            var self = this;
+            this.color =  Segue.bindable('yellow');
+            this.background =  Segue.bindable('blue');
 
-    tsf.newItem(d);
-});
+            self.user = {
+                firstName: Segue.bindable('John'),
+                lastName:  Segue.bindable('Smith')
+            };
 
+            self.user.fullName = Segue.computed(function () {
+                return self.user.lastName() + ', ' + self.user.firstName();
+            }).subscribeTo(self.user.firstName, self.user.lastName);
 
-$('#signinButton').on('click', function (event) {
-    $('#googleSignIn').prop('disabled', true);
-    $('#facebookSignIn').prop('disabled', true);
-    tsf.initAuthApis(function (data) {
-        $('#googleSignIn').prop('disabled', false);
-        $('#facebookSignIn').prop('disabled', false);
+            self.item = {
+                image_url: Segue.bindable('http://i.imgur.com/UORFJ3w.jpg'),
+                target: 'self'
+            };
+        }; 
+
+        w['myModel'] = myModel;
+
+        var template = $('#grid-item-template').get(0);
+        var rootNode = d.importNode(template.content, true);
+        Segue.applyBindings(rootNode, myModel);
+        
+        var newItem = $(rootNode).contents();
+        console.dir($('.grid').append(newItem).isotope('appended', newItem));
+
+        $('.btn-hello').on('click', function () {
+            alert('Hello the!');
+        });
+
     });
-});
-
-
-$('#googleSignIn').click(function (event) {
-    tsf.googleLogin(function (data) {
-        // TODO: Check for login error
-        console.log('Google login complete.');
-        console.dir(data);
-    });
-});
-
-
-$('#facebookSignIn').click(function (event) {
-    // TODO: Check for login error
-    tsf.facebookLogin(function (data) {
-        console.log('Facebook login complete.');
-        console.dir(data);
-    });
-});
-
-
-$('.imagedropzone').imagedrop({
-    maxFileSize: 8 * 1024 * 1024,
-    onInvalidFile: function (element, file) {
-        console.log("Invavlid file " + file.name || "" + ".");
-    },
-    onChange: function(element, file) {
-        console.log("Change: " + ((file) ? (file.name || 'No File Name') : 'None'));
-    }
-});
-
-
-$('#dropbutton').on('click', function (event) {
-    console.log($('#dz2').imagedrop('file'));
-});
-
-
-$('#switchDrop').on('click', function (event) {
-    var i1 = $('#dz1').imagedrop('file');
-    var i2 = $('#dz2').imagedrop('file');
-    $('#dz1').imagedrop('file', i2);
-    $('#dz2').imagedrop('file', i1);
-});
-
-
-$('#clearDrop').on('click', function (event) {
-   $('#dz2').imagedrop('clearFile');
-});
-
-
-$('#spreadDrop').on('click', function (event) {
-   var i1 = $('.imagedropzone').imagedrop('file');
-   $('.imagedropzone').imagedrop(i1 ? 'file' : 'clearFile', i1);
-});
-
-$('#getDrop').on('click', function (event) {
-    var i1 = $('#dz1').imagedrop('file');
-    var reader = new FileReader();
-
-    console.log(i1 instanceof File);
-    reader.onload = function (e) {
-        //console.log(this.result);
-        console.log(btoa(this.result));
-    }
-    //reader.readAsDataURL(i1);
-    reader.readAsBinaryString(i1);
-});
+})(window, document, jQuery);
 
 
