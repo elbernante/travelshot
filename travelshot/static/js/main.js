@@ -391,64 +391,210 @@ var tsf = (function ($) {
         var banner = $('.slideshow').slideshow().slideshow('start');
 
         // init Isotope
-        var $grid = $('.grid').isotope({
-            itemSelector: '.grid-item',
-            percentPosition: true,
-            masonry: {
-                columnWidth: '.grid-sizer'
-            }
-        });
+        // var $grid = $('.grid').isotope({
+        //     itemSelector: '.grid-item',
+        //     percentPosition: true,
+        //     masonry: {
+        //         columnWidth: '.grid-sizer'
+        //     }
+        // });
         
 
-        $w.load(function () {
-            $grid.isotope('layout');
+        // $w.load(function () {
+        //    $('.grid').isotope('layout');
+        // });
+
+
+        // Page elements Classes
+        var HomePage = Segue.Class('HomePage', {
+            base: Segue.Page,
+            init: function (title) {
+                Segue.Page.apply(this, {});
+                this.pageBody = $('#body-content').get(0);
+                this.showBanner = false;
+                this.title = title || 'No Page Title'
+                return this;
+            },
+
+            dismiss: function () {
+                console.log('dismmising page from subclass: ' + this.title);
+                var self = this;
+                $.each(self.elements, function (i, o) {
+                    o.dismiss();
+                });
+            },
+
+            load: function () {
+                console.log('Loading page from subclass: ' + this.title);
+                var self = this,
+                    $bod = $(self.pageBody || d.getElementById('body-content') || d.getElementsByTagName('body')[0]);
+
+                $.each(self.elements, function (i, o) {
+                    o.container = $bod;
+                    o.load();
+                });
+            }
+        });
+
+        var Panel = Segue.Class('Panel', {
+            base: Segue.Element,
+            init: function (panelObj) {
+                Segue.Element.call(this, {
+                    templateNode: $('#panel-template').get(0),
+                    model: panelObj
+                });
+
+                for (var i = 0, l = panelObj.items.length; i < l; i++) {
+                    this.addChildElement(new ItemEntry(panelObj.items[i]));
+                }
+
+                return this;
+            },
+
+            html: function () {
+                if (this.cachedHtml) {
+                    return this.cachedHtml;
+                }
+
+                var html = Segue.Element.prototype.html.call(this);
+
+                // initialize isotope for this panel
+                var $grid = $(this.portals['item_list']).isotope({
+                    itemSelector: '.grid-item',
+                    percentPosition: true,
+                    masonry: {
+                        columnWidth: '.grid-sizer'
+                    }
+                });
+
+                return html;
+            },
+
+            dismiss: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                $.each(self.elements, function (i, o) {
+                    o.dismiss();
+                });
+
+                $html.stop().hide('slow', function () {
+                    $html.remove();
+                    delete self.cachedHtml;
+                });
+            },
+
+            load: function () {
+                var self = this,
+                    $html = $(self.html()),
+                    $grid = $(self.portals['item_list']);
+
+                self.container.append($html);
+                $html.stop().hide().show('slow', function () {
+                    $grid.isotope('layout');
+                    $.each(self.elements, function (i, o) {
+                        o.isotopeGrid = $grid;
+                        o.load();
+                    });
+                });
+            }
+        });
+
+        var ItemEntry = Segue.Class('ItemEntry', {
+            base: Segue.Element,
+            init: function (itemObj) {
+                Segue.Element.call(this, {
+                    templateNode: $('#grid-item-template').get(0),
+                    model: itemObj
+                });
+                return this;
+            },
+
+            dismiss: function () {
+                var self = this;
+                if (self.isotopeGrid) {
+                    self.isotopeGrid.isotope('remove', $(self.html()));
+                    delete self.cachedHtml;
+                }
+            },
+
+            load: function () {
+                var self = this,
+                    newItem = $(self.html());
+
+                if (self.isotopeGrid) {
+                    $(self.portals['item_image']).one('load', function () {
+                        self.isotopeGrid.append(newItem).isotope('appended', newItem);
+                    }).each(function () {
+                        if (this.complete) $(this).load();
+                    });
+                }
+            }
         });
 
 
-        var homePage = new Segue.Page('Home Page');
+        // Instantiations
+        var asiaPanel = {
+            title: Segue.bindable('Asia Town'),
+            items: [
+                {image_url: 'http://i.imgur.com/bwy74ok.jpg'},
+                {image_url: 'http://i.imgur.com/bAZWoqx.jpg'},
+                {image_url: 'http://i.imgur.com/PgmEBSB.jpg'},
+                {image_url: 'http://i.imgur.com/aboaFoB.jpg'},
+                {image_url: 'http://i.imgur.com/LkmcILl.jpg'},
+                {image_url: 'http://i.imgur.com/q9zO6tw.jpg'},
+                {image_url: 'http://i.imgur.com/r8p3Xgq.jpg'},
+                {image_url: 'http://i.imgur.com/hODreXI.jpg'},
+                {image_url: 'http://i.imgur.com/UORFJ3w.jpg'}
+            ]
+        };
+        w['asiaPanel'] = asiaPanel;
+
+        var homePage = new HomePage('Home Page');
+        homePage.addChildElement(new Panel(asiaPanel));
+        homePage.addChildElement(new Panel(asiaPanel));
+
         Segue.loadPage(homePage);
+        w['myHomePage'] = homePage;
 
         $('#signin').on('click', function (evt) {
-            Segue.loadPage(new Segue.Page('Login Page'), '/pages/login');
+            Segue.loadPage(new HomePage('Login Page'), '/pages/login');
         });
 
         $('#upload').on('click', function (evt) {
-            //w.history.pushState({tsPage: 'another index page'}, 'going to upload page', '/pages/upload/');
-            Segue.loadPage(new Segue.Page('Upload Page'), '/pages/upload');
+            //w.history.pushState({HomePage: 'another index page'}, 'going to upload page', '/pages/upload/');
+            Segue.loadPage(new HomePage('Upload Page'), '/pages/upload');
         });
 
-        var myModel = new function () {
-            var self = this;
-            this.color =  Segue.bindable('yellow');
-            this.background =  Segue.bindable('blue');
+        // var myModel = new function () {
+        //     var self = this;
+        //     this.color =  Segue.bindable('yellow');
+        //     this.background =  Segue.bindable('blue');
 
-            self.user = {
-                firstName: Segue.bindable('John'),
-                lastName:  Segue.bindable('Smith')
-            };
+        //     self.user = {
+        //         firstName: Segue.bindable('John'),
+        //         lastName:  Segue.bindable('Smith')
+        //     };
 
-            self.user.fullName = Segue.computed(function () {
-                return self.user.lastName() + ', ' + self.user.firstName();
-            }).subscribeTo(self.user.firstName, self.user.lastName);
+        //     self.user.fullName = Segue.computed(function () {
+        //         return self.user.lastName() + ', ' + self.user.firstName();
+        //     }).subscribeTo(self.user.firstName, self.user.lastName);
 
-            self.item = {
-                image_url: Segue.bindable('http://i.imgur.com/UORFJ3w.jpg'),
-                target: 'self'
-            };
-        }; 
+        //     self.item = {
+        //         image_url: Segue.bindable('http://i.imgur.com/UORFJ3w.jpg'),
+        //         target: 'self'
+        //     };
+        // }; 
 
-        w['myModel'] = myModel;
+        // w['myModel'] = myModel;
 
-        var template = $('#grid-item-template').get(0);
-        var rootNode = d.importNode(template.content, true);
-        Segue.applyBindings(rootNode, myModel);
+        // var template = $('#grid-item-template').get(0);
         
-        var newItem = $(rootNode).contents();
-        console.dir($('.grid').append(newItem).isotope('appended', newItem));
+        // var rootNode = d.importNode(template.content, true);
+        // Segue.applyBindings(rootNode, myModel);
 
-        $('.btn-hello').on('click', function () {
-            alert('Hello the!');
-        });
+        // var newItem = $(rootNode.childNodes);
+        // console.dir($('.grid').append(newItem).isotope('appended', newItem));
 
     });
 })(window, document, jQuery);

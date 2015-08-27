@@ -58,11 +58,18 @@ function copyOwnPropertiesFrom(target, source) {
 
 (function (w, d) {
 
-    var classPool = {};
-    var storybook = {};
+    var classPool = {},
+        storybook = {};
 
     var segue = classPool;
         segue['storybook'] = storybook;
+
+    var registerName = function (name, func) {
+         if (classPool[name]) {
+            throw 'The name "' + name + '" already exists.';
+        }
+        classPool[name] = func;
+    };
 
     var nextSequence = function () {
         var seed = 0;
@@ -71,7 +78,7 @@ function copyOwnPropertiesFrom(target, source) {
         }
     }();
 
-
+    /////////////////// Class Tools ///////////////////
     var Class = function (name, options) {
         // Check if class already exists.
         if (classPool[name]) {
@@ -113,7 +120,7 @@ function copyOwnPropertiesFrom(target, source) {
         classPool[name].prototype.className = name;
         return  classPool[name];
     };
-    classPool['Class'] = Class;
+    registerName('Class', Class);
 
     var createFromObject = function (obj) {
         if (!obj['className'] || !classPool[obj['className']]) {
@@ -141,10 +148,16 @@ function copyOwnPropertiesFrom(target, source) {
 
         return newObj;
     };
-    classPool['createFromObject'] = createFromObject;
+    registerName('createFromObject', createFromObject);
 
 
+    /////////////////// Segue Page Loading Tools ///////////////////
     var loadPage = function (pageObj, url, title) {
+
+        if (storybook['currentPage'] && storybook['currentPage'] === pageObj) {
+            return;
+        }
+
         // save current page to history
         if (!storybook['initialPage']) {
             storybook['initialPage'] = pageObj;
@@ -163,7 +176,7 @@ function copyOwnPropertiesFrom(target, source) {
         pageObj.load();
         return pageObj;
     };
-    classPool['loadPage'] = loadPage;
+    registerName('loadPage', loadPage);
 
 
     //listen to window onpopstate
@@ -190,6 +203,7 @@ function copyOwnPropertiesFrom(target, source) {
         }
     };
 
+    /////////////////// MVVM Tools ///////////////////
     var util = function () {
         var regExEscaper = /[.*+?^=!:${}()|\[\]\/\\]/g,
             regExEscape = function (str) { return str.replace(regExEscaper, '\\$&'); },
@@ -295,7 +309,7 @@ function copyOwnPropertiesFrom(target, source) {
 
         return bindover;
     };
-    classPool['bindable'] = bindable;
+    registerName('bindable', bindable);
 
     var computed = function (evaluatorFunc, target) {
         var tr = target || this;
@@ -328,7 +342,7 @@ function copyOwnPropertiesFrom(target, source) {
 
         return handler;
     };
-    classPool['computed'] = computed;
+    registerName('computed', computed);
 
     // Text Node and Element Attribute binder
     var bindTextNodeOrAttr = function (placeHolders, textNodeOrAttr, model) {
@@ -384,9 +398,8 @@ function copyOwnPropertiesFrom(target, source) {
         };
     }();
 
-
     segueBinders.registerBinderForKey('data-sg-attr-bind', function () {
-        var processor = function (attr, elementNode, model) {
+        var processor = function (attr, elementNode, model, portal) {
             var attrArr = attr['value'].replace(/[\s]/g , '').split(';');
             
             for (var i = 0, l = attrArr.length; i < l; i++) {
@@ -406,8 +419,18 @@ function copyOwnPropertiesFrom(target, source) {
         }
     }());
 
+    segueBinders.registerBinderForKey('data-sg-portal', function () {
+        var processor = function (attr, elementNode, model, portal) {
+            var portalId = attr['value'].replace(/[\s]/g , '');
+            portal[portalId] = elementNode;
+        };
 
-    var processAttrsOfNode = function (elementNode, model) {
+        return {
+            process: processor
+        }
+    }());
+
+    var processAttrsOfNode = function (elementNode, model, portal) {
         var attributes = elementNode.attributes;
         if (!attributes) { return; };
 
@@ -415,7 +438,7 @@ function copyOwnPropertiesFrom(target, source) {
             var currentAttribute = attributes.item(i),
                 sgBinder = segueBinders['binders'][currentAttribute.name];
             if (sgBinder) {
-                sgBinder['process'](currentAttribute, elementNode, model);
+                sgBinder['process'](currentAttribute, elementNode, model, portal);
             } else {
                 var placeHolders = util.getPlaceHolders(currentAttribute.value);
                 if (placeHolders) {
@@ -425,10 +448,10 @@ function copyOwnPropertiesFrom(target, source) {
         }
     };
 
-    var traveseNodes = function (nodes, model) {
+    var traveseNodes = function (nodes, model, portal) {
         for (var i = 0, l = nodes.length; i < l; i++) {
             var currentNode = nodes[i];
-            processAttrsOfNode(currentNode, model);
+            processAttrsOfNode(currentNode, model, portal);
 
             // If text node, process for placeholders
             if (currentNode.nodeType === Node.TEXT_NODE) {
@@ -439,30 +462,98 @@ function copyOwnPropertiesFrom(target, source) {
             }
 
             // Process child nodes
-            traveseNodes(currentNode.childNodes, model);
+            traveseNodes(currentNode.childNodes, model, portal);
         }
     };
 
-    var applyBindings = function (rootNode,  model) {
+    var applyBindings = function (rootNode,  model, portal) {
         if (rootNode.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
-            traveseNodes(rootNode.childNodes, model);
+            traveseNodes(rootNode.childNodes, model, portal);
         } else {
-            traveseNodes([rootNode], model);
+            traveseNodes([rootNode], model, portal);
         }
+        return rootNode;
     };
-    classPool['applyBindings'] = applyBindings;
+    registerName('applyBindings', applyBindings);
 
 
-    // Class definitions
-
+    /////////////////// Base Classes Definitions ///////////////////
     var Element = Class('Element', {
-        init: function () {
+        init: function (options) {
+            this.options = util.extend({}, options);
             this.elements = [];
+            this.portals = {};
             return this;
+        },
+
+        html: function () {
+            if (this.cachedHtml) {
+                return this.cachedHtml;
+            }
+
+            var template = (this.options.templateId) ?
+                    d.getElementById(this.options.templateId) :
+                    this.options.templateNode;
+
+            var node = (1 === template.nodeType && 'template' === template.nodeName.toLowerCase()) ?
+                    d.importNode(template.content, true) :
+                    template;
+
+            this.cachedHtml = (11 === applyBindings(node, this.options.model || {}, this.portals).nodeType) ?
+                    Array.prototype.slice.call(node.childNodes) : node;
+           
+            return this.cachedHtml;
+        },
+
+        addChildElement: function (elem) {
+            if (!(elem instanceof Element)) {
+                throw 'Invalid element type. Only instances of Element class are allowed.';
+            }
+            this.elements.push(elem);
+            return this;
+        },
+
+        setTemplateId: function (id) {
+            this.options.templateId = id;
+            return this;
+        },
+
+        setTemplate: function (templateNode) {
+            this.options.templateId = false;
+            this.options.templateNode = templateNode;
+        },
+
+        setModel: function (modelObj) {
+            this.options.model = modelObj;
         },
 
         hasElements: function () {
             return this.elements.length > 0;
+        },
+
+        appendElementsToNode: function (elems, containerNode, callback) {
+            for (var i = 0, l = elems.length; i < l; i++) {
+                var nodeOrArr = elems[i].html(),
+                    nodes = (nodeOrArr instanceof Array) ? nodeOrArr : [nodeOrArr];
+                for (var x = 0, y = nodes.length; x < y; x++) {
+                    containerNode.appendChild(nodes[x]);
+                    if ('function' === typeof callback) {
+                        callback(nodes[x]);
+                    }
+                }
+            }
+        },
+
+        dismiss: function () {
+            for (var i = 0, l = this.elements.length; i < l; i++) {
+                this.elements[i].dismiss();
+            }
+        },
+
+        load: function () {
+            for (var i = 0, l = this.elements.length; i < l; i++) {
+                this.elements[i].load();
+            }
         },
 
         toPlainObject: function () {
@@ -482,30 +573,29 @@ function copyOwnPropertiesFrom(target, source) {
         }
     });
 
-    var Banner = Class('Banner', {
-        base: Element,
-        init: function () {
-            return this;
-        }
-    });
-
     var Page = Class('Page', {
 
         base: Element,
 
-        init: function (title) {
-            this.base.apply(this, arguments);
-            this.showbanner = false;
-            this.title = title;
+        init: function () {
+            Element.apply(this, arguments);
             return this;
         },
 
         dismiss: function () {
             console.log('dismmising page: ' + this.title);
+            var bod = this.pageBody || d.getElementById('body-content') || d.getElementsByTagName('body')[0];
+            var lc = bod.lastChild;
+            while (lc) {
+                bod.removeChild(lc);
+                lc = bod.lastChild;
+            }
         },
 
         load: function () {
-            console.log('loading page: ' + this.title);
+            console.log('Loading page: ' + this.title);
+            var bod = this.pageBody || d.getElementById('body-content') || d.getElementsByTagName('body')[0];
+            this.appendElementsToNode(this.elements, bod);
         }
     });
 
