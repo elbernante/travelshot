@@ -59,10 +59,12 @@ function copyOwnPropertiesFrom(target, source) {
 (function (w, d) {
 
     var classPool = {},
-        storybook = {};
+        storybook = {},
+        listeners = {};
 
     var segue = classPool;
         segue['storybook'] = storybook;
+        segue['listeners'] = listeners;
 
     var registerName = function (name, func) {
          if (classPool[name]) {
@@ -77,6 +79,25 @@ function copyOwnPropertiesFrom(target, source) {
             return ++seed;
         }
     }();
+
+    var onFunc = function (eventName, callback) {
+        if (!segue['listeners'][eventName]) {
+            segue['listeners'][eventName] = [];
+        }
+        segue['listeners'][eventName].push(callback);
+        return this;
+    };
+    registerName('on', onFunc);
+
+    var fireEvent = function (eventName) {
+        var listenerArr = segue['listeners'][eventName];
+        if (listenerArr) {
+            for (var i = 0, l = listenerArr.length; i < l; i++) {
+                listenerArr[i].apply(this, Array.prototype.slice.call(arguments, 1));
+            };
+        }
+    };
+    registerName('fireEvent', fireEvent);
 
     /////////////////// Class Tools ///////////////////
     var Class = function (name, options) {
@@ -174,6 +195,7 @@ function copyOwnPropertiesFrom(target, source) {
 
         storybook['currentPage'] = pageObj;
         pageObj.load();
+        segue['fireEvent']('pageLoad', pageObj);
         return pageObj;
     };
     registerName('loadPage', loadPage);
@@ -198,6 +220,7 @@ function copyOwnPropertiesFrom(target, source) {
             }
             storybook['currentPage'] = pageObj;
             pageObj.load();
+            segue['fireEvent']('pageLoad', pageObj);
         } else {
             w.history.replaceState({}, 'Landing Page', storybook['initialPageUrl'] || '/');
         }
@@ -288,6 +311,13 @@ function copyOwnPropertiesFrom(target, source) {
                 for (var i = 0, l = this['subscribers'].length; i < l; i++) {
                     this['subscribers'][i]();
                 }
+            },
+
+            unsubscribe: function (sbscrbr) {
+                var i = this['subscribers'].indexOf(sbscrbr);
+                if (-1 !== i) {
+                    this['subscribers'].splice(i, 1)
+                }
             }
         }
     }();
@@ -345,7 +375,7 @@ function copyOwnPropertiesFrom(target, source) {
     registerName('computed', computed);
 
     // Text Node and Element Attribute binder
-    var bindTextNodeOrAttr = function (placeHolders, textNodeOrAttr, model) {
+    var bindTextNodeOrAttr = function (placeHolders, textNodeOrAttr, model, portal) {
 
         var valueAcccessor = (textNodeOrAttr['nodeType'] && textNodeOrAttr['nodeType'] === Node.TEXT_NODE) ?
                                     'nodeValue' : 'value'
@@ -372,6 +402,7 @@ function copyOwnPropertiesFrom(target, source) {
                 if (util.isSubscribable(resolvedProp)) {
                     observables[placeHolders[i]] = resolvedProp;
                     resolvedProp.subscribe(valueUpdater);
+                    portal['_subcriptions'].push({model: resolvedProp, subscriber: valueUpdater});
                 } else if ('function' === typeof resolvedProp) {
                     updatedValue = util.replaceAll(updatedValue, placeHolders[i], resolvedProp());
                 } else {
@@ -408,7 +439,7 @@ function copyOwnPropertiesFrom(target, source) {
                         n_att = d.createAttribute(t_attr[0]);
 
                     n_att.value = util.wrapWithPlaceHolders(t_attr[1]);
-                    bindTextNodeOrAttr([n_att.value], n_att, model);
+                    bindTextNodeOrAttr([n_att.value], n_att, model, portal);
                     elementNode.setAttributeNode(n_att);
                 }
             }
@@ -442,7 +473,7 @@ function copyOwnPropertiesFrom(target, source) {
             } else {
                 var placeHolders = util.getPlaceHolders(currentAttribute.value);
                 if (placeHolders) {
-                    bindTextNodeOrAttr(placeHolders, currentAttribute, model);
+                    bindTextNodeOrAttr(placeHolders, currentAttribute, model, portal);
                 }
             }  
         }
@@ -457,7 +488,7 @@ function copyOwnPropertiesFrom(target, source) {
             if (currentNode.nodeType === Node.TEXT_NODE) {
                 var placeHolders = util.getPlaceHolders(currentNode.nodeValue);
                 if (placeHolders) {
-                    bindTextNodeOrAttr(placeHolders, currentNode, model);
+                    bindTextNodeOrAttr(placeHolders, currentNode, model, portal);
                 }
             }
 
@@ -483,6 +514,7 @@ function copyOwnPropertiesFrom(target, source) {
             this.options = util.extend({}, options);
             this.elements = [];
             this.portals = {};
+            this.portals['_subcriptions'] = [];
             return this;
         },
 
@@ -503,6 +535,20 @@ function copyOwnPropertiesFrom(target, source) {
                     Array.prototype.slice.call(node.childNodes) : node;
            
             return this.cachedHtml;
+        },
+
+        uncacheHtlm: function () {
+            var self = this,
+                sub = self.portals['_subcriptions'].pop();
+
+            while (sub) {
+                if (sub['model']) {
+                    sub['model']['unsubscribe'](sub['subscriber']);
+                }
+                sub = self.portals['_subcriptions'].pop();
+            }
+            delete self.cachedHtml;
+            return self;
         },
 
         addChildElement: function (elem) {

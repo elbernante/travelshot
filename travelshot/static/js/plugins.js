@@ -587,6 +587,14 @@
         return self;
     };
 
+    SlideShow.prototype.addImage = function (imgTag) {
+        var self = this,
+            newImg = util.markUpImage.call(self, imgTag);
+        self.images.push(newImg);
+        self.element.append(newImg);
+        return self;
+    };
+
     var _actions = {
         markUp: function (options) {
             return this.each(function(index, obj){
@@ -607,6 +615,13 @@
             return this.each(function(index, obj){
                 var o = $.data(this, pluginName);
                 if (o) { o.stop(); }
+            });
+        },
+
+        addImage: function (imgTag) {
+            return this.each(function(index, obj){
+                var o = $.data(this, pluginName);
+                if (o) { o.addImage(imgTag); }
             });
         }
     };

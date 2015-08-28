@@ -359,59 +359,156 @@ var tsf = (function ($) {
     var $w = $(w),
         $d = $(d);
 
-    $(function (){
+    $(function () {
 
-        // Navbar animation
-        var navbarAnimation = function () {
-            var navBarElem = $('nav.navbar'),
-                isAnimationInQueue = false,
-                triggerPoint = 100;
+        var NavBar = Segue.Class('NavBar', {
+            base: Segue.Element,
+            init: function () {
+                Segue.Element.call(this, {
+                    templateNode: $('#page-nav-bar').get(0),
+                    model: {}
+                });
 
-            var animateNavbar = function () {
-                var atPoint = $w.scrollTop();
+                var self = this,
+                    $html = $(self.html());
 
-                if (atPoint > triggerPoint) {
-                    navBarElem.removeClass('navbar-grow');
+                self.isAnimationInQueue = false,
+                self.triggerPoint = 100;
+                self.isUpdateCancelled = false;
+                self.mointorFunc = function () {
+                    self.didScrollMonitor.apply(self, arguments);
+                };
+
+                self.monitorScroll(true);
+
+                Segue.on('pageLoad', function (pageObj) {
+                    self.setMode(pageObj.navbar);
+                });
+
+                return self;
+            },
+
+            setMode: function (mode) {
+                var self = this,
+                    $html = $(self.html());
+
+                self.monitorScroll(false);
+                if ('shrink' === mode) {
+                    self.isUpdateCancelled = true;
+                    $html.removeClass('navbar-grow');
+                } else if ('grow' === mode) {
+                    self.isUpdateCancelled = true;
+                    $html.addClass('navbar-grow');
                 } else {
-                    navBarElem.addClass('navbar-grow');
+                    self.isUpdateCancelled = false;
+                    self.monitorScroll(true);
                 }
-                isAnimationInQueue = false;
-            };
+                return self;
+            },
 
-            $w.on('scroll', function (event) {
-                if (!isAnimationInQueue) {
-                    isAnimationInQueue = true;
-                    setTimeout(animateNavbar, 250);
+            updateDisplay: function () {
+                var self = this,
+                    atPoint = $w.scrollTop(),
+                    $html = $(self.html());
+
+                if (self.isUpdateCancelled) {
+                    self.isUpdateCancelled = false;
+                    return self;
                 }
-            });
-            animateNavbar();
-        }();
 
-        var parl = $('.featured_shots').parallax();
-        var banner = $('.slideshow').slideshow().slideshow('start');
+                if (atPoint > self.triggerPoint) {
+                    $html.removeClass('navbar-grow');
+                } else {
+                    $html.addClass('navbar-grow');
+                }
+                self.isAnimationInQueue = false;
 
-        // init Isotope
-        // var $grid = $('.grid').isotope({
-        //     itemSelector: '.grid-item',
-        //     percentPosition: true,
-        //     masonry: {
-        //         columnWidth: '.grid-sizer'
-        //     }
-        // });
-        
+                return self;
+            },
 
-        // $w.load(function () {
-        //    $('.grid').isotope('layout');
-        // });
+            didScrollMonitor: function (event) {
+                var self = this;
+                if (!self.isAnimationInQueue) {
+                    self.isAnimationInQueue = true;
+                    setTimeout(function () {
+                        self.updateDisplay();
+                    }, 250);
+                }
+            },
 
+            monitorScroll: function (shouldMonitor) {
+                var self = this;
+                if (shouldMonitor) {
+                    $w.on('scroll', self.mointorFunc);
+                    self.updateDisplay();
+                } else {
+                    $w.off('scroll', self.mointorFunc);
+                }
+                return self;
+            }
+        });
 
-        // Page elements Classes
-        var HomePage = Segue.Class('HomePage', {
+        var Cover = Segue.Class('Cover', {
+            base: Segue.Element,
+            init: function () {
+                Segue.Element.call(this, {
+                    templateNode: $('#page-cover').get(0),
+                    model: {}
+                });
+
+                var self = this;
+                    $html = $(self.html());
+
+                self.images = [];
+                self.pageWantsCover = false;
+
+                self.parallax = $html.find('.featured_shots').parallax();
+                self.banner = $html.find('.slideshow').slideshow();
+
+                Segue.on('pageLoad', function (pageObj) {
+                    self.pageWantsCover = pageObj.showCover;
+                    self.updateDisplay();
+                });
+
+                return this;
+            },
+
+            updateDisplay: function () {
+                var self = this;
+                if (self.pageWantsCover && self.hasImages()) {
+                    $html.removeClass('jumbotron-hidden');
+                } else {
+                    $html.addClass('jumbotron-hidden');
+                }
+                return self;
+            },
+
+            hasImages: function () {
+                return this.images.length > 0;
+            },
+
+            addImage: function (imgUrl) {
+                var self = this,
+                    newImg = $('<img>').attr('src', imgUrl);
+
+                newImg.one('load', function () {
+                    self.banner.slideshow('addImage', newImg).slideshow('start');
+                    self.images.push(imgUrl);
+                    self.updateDisplay();
+                }).each(function () {
+                    if (this.complete) $(this).load();
+                });
+                return self;
+            }
+        });
+
+        var SPage = Segue.Class('SPage', {
             base: Segue.Page,
             init: function (title) {
                 Segue.Page.apply(this, {});
                 this.pageBody = $('#body-content').get(0);
-                this.showBanner = false;
+                this.navbar = 'auto';
+                this.showCover = false;
                 this.title = title || 'No Page Title'
                 return this;
             },
@@ -422,6 +519,7 @@ var tsf = (function ($) {
                 $.each(self.elements, function (i, o) {
                     o.dismiss();
                 });
+                return self;
             },
 
             load: function () {
@@ -433,6 +531,7 @@ var tsf = (function ($) {
                     o.container = $bod;
                     o.load();
                 });
+                return self;
             }
         });
 
@@ -480,8 +579,9 @@ var tsf = (function ($) {
 
                 $html.stop().hide('slow', function () {
                     $html.remove();
-                    delete self.cachedHtml;
+                    self.uncacheHtlm();
                 });
+                return self;
             },
 
             load: function () {
@@ -497,6 +597,7 @@ var tsf = (function ($) {
                         o.load();
                     });
                 });
+                return self;
             }
         });
 
@@ -514,8 +615,9 @@ var tsf = (function ($) {
                 var self = this;
                 if (self.isotopeGrid) {
                     self.isotopeGrid.isotope('remove', $(self.html()));
-                    delete self.cachedHtml;
+                    self.uncacheHtlm();
                 }
+                return self;
             },
 
             load: function () {
@@ -529,6 +631,86 @@ var tsf = (function ($) {
                         if (this.complete) $(this).load();
                     });
                 }
+                return self;
+            }
+        });
+
+        var LoginPanel = Segue.Class('LoginPanel', {
+            base: Segue.Element,
+            init: function (loginBtns) {
+                Segue.Element.call(this, {
+                    templateNode: $('#login-panel').get(0),
+                    model: {}
+                });
+
+                var self = this;
+                $.each(loginBtns, function (i, o) {
+                    self.addChildElement(new LoginButton(o));
+                });
+
+                return this;
+            },
+
+            dismiss: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                $.each(self.elements, function (i, o) {
+                    o.dismiss();
+                });
+
+                $html.stop().slideUp('slow', function () {
+                    $html.remove();
+                    self.uncacheHtlm();
+                });
+                return self;
+            },
+
+            load: function () {
+                var self = this,
+                    $html = $(self.html()),
+                    $buttonPlace = $(self.portals['button_list']);
+
+                self.container.append($html);
+                $html.stop().hide().slideDown('slow', function () {
+                    $.each(self.elements, function (i, o) {
+                        o.container = $buttonPlace;
+                        o.load();
+                    });
+                });
+                return self;
+            }
+        });
+
+        var LoginButton = Segue.Class('LoginButton', {
+            base: Segue.Element,
+            init: function (loginBtn) {
+                Segue.Element.call(this, {
+                    templateNode: $('#login-button-template').get(0),
+                    model: loginBtn
+                });
+
+                return this;
+            },
+
+            dismiss: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                $html.stop().slideUp('slow', function () {
+                    $html.remove();
+                    self.uncacheHtlm();
+                });
+                return self;
+            },
+
+            load: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                self.container.append($html);
+                $html.stop().hide().slideDown('slow');
+                return self;
             }
         });
 
@@ -550,20 +732,51 @@ var tsf = (function ($) {
         };
         w['asiaPanel'] = asiaPanel;
 
-        var homePage = new HomePage('Home Page');
+        var navBar = new NavBar();
+        w['navBar'] = navBar;
+
+        var pageCover = new Cover();
+        // TODO: Load only first image.
+        //          load suceeding images 5 seconds later
+        //          to allow the rest of the page to load first
+        pageCover.addImage('static/images/cover_1.jpg');
+        pageCover.addImage('static/images/cover_2.jpg');
+        pageCover.addImage('static/images/cover_3.jpg');
+
+        var homePage = new SPage('Home Page');
+        homePage.showCover = true;
         homePage.addChildElement(new Panel(asiaPanel));
         homePage.addChildElement(new Panel(asiaPanel));
 
-        Segue.loadPage(homePage);
+        //Segue.loadPage(homePage);
         w['myHomePage'] = homePage;
 
+        var loginPage = new SPage('Login Page');
+        loginPage.navbar = 'shrink';
+        loginPage.showCover = false;
+        loginPage.addChildElement(new LoginPanel([
+            {
+                buttonClass: 'gplus-button',
+                displayText: 'Sign in with Goolge',
+                hoverText: 'Google'
+            },
+
+            {
+                buttonClass: 'fb-button',
+                displayText: 'Sign in with Facebook',
+                hoverText: 'Facebook'
+            }
+        ]));
+        Segue.loadPage(loginPage);
         $('#signin').on('click', function (evt) {
-            Segue.loadPage(new HomePage('Login Page'), '/pages/login');
+            Segue.loadPage(loginPage, '/pages/login');
         });
 
+        var uploadPage = new SPage('Upload Page');
+        uploadPage.navbar = 'grow';
+        uploadPage.showCover = true;
         $('#upload').on('click', function (evt) {
-            //w.history.pushState({HomePage: 'another index page'}, 'going to upload page', '/pages/upload/');
-            Segue.loadPage(new HomePage('Upload Page'), '/pages/upload');
+            Segue.loadPage(uploadPage, '/pages/upload');
         });
 
         // var myModel = new function () {

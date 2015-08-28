@@ -14,6 +14,7 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='lib/bootstrap/3.3.5/css/bootstrap.min.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+        <link href='https://fonts.googleapis.com/css?family=Roboto:700' rel='stylesheet' type='text/css'>
         <script src="{{ url_for('static', filename='lib/modernizr/2.8.3/modernizr.min.js') }}"></script>
     </head>
     <body>
@@ -22,7 +23,7 @@
         <![endif]-->
 
         <!-- Add your site or application content here -->
-        <nav class="navbar navbar-default navbar-fixed-top navbar-grow">
+        <nav class="navbar navbar-default navbar-fixed-top navbar-grow" id="page-nav-bar">
             <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#ts-navbar-collapse" aria-expanded="false">
@@ -48,86 +49,24 @@
         </nav>
 
         <!-- Main jumbotron for a primary marketing message or call to action -->
-        <!-- <div class="jumbotron">
+        <div class="jumbotron jumbotron-hidden" id="page-cover">
             <div class="container">
                 <div class="featured_shots">
-                    <div class="slideshow">
-                        <img src="{{ url_for('static', filename='images/cover_1.jpg') }}">
-                        <img src="{{ url_for('static', filename='images/cover_2.jpg') }}">
-                        <img src="{{ url_for('static', filename='images/cover_3.jpg') }}">
-                    </div>
+                    <div class="slideshow"></div>
                 </div>
                 <div class="fronter">
                     <h1>Travel Sh[O]t</h1>
                     <h3>See the world through the eyes of a local.</h3>
                 </div>
             </div>
-        </div> -->
-
-        <div class="container" id="body-content">
-        <!-- Example row of columns -->
-           <!--  <div class="panel panel-default">
-                <div class="panel-heading">
-                    <h2>Asia <small>See more <span class="glyphicon glyphicon-plane rotate-90" aria-hidden="true"></span> </small><a class="btn-tool" href="javascript:void(0);"><img src="{{ url_for('static', filename='images/rss_button.png') }}"></a></h2>
-                </div>
-                <div class="panel-body">
-                    
-                    <div class="grid">
-                      <div class="grid-sizer"></div>
-
-                      <div class="grid-item">
-                        <div class="overlay">
-                            <div class="overlay-dimmer">
-                                <div class="item-author">
-                                    <span><small>by:</small> Juan Esteban</span>
-                                    <div class="item-author-img">
-                                         <img class="img-circle" src="https://lh5.googleusercontent.com/-YXQIZO89UHg/AAAAAAAAAAI/AAAAAAAAAJE/KJFqVjwcaAU/photo.jpg" />
-                                    </div>
-                                </div>
-
-                                <div class="item-title">Very very very very looooooooooooonnnngggg Title goes here</div>
-                            </div>
-                        </div>
-                        <img src="http://i.imgur.com/bwy74ok.jpg" />
-                      </div>
-
-                      <div class="grid-item">
-                        <img src="http://i.imgur.com/bAZWoqx.jpg" />
-                      </div>
-                      <div class="grid-item">
-                        <img class="img-circle" src="http://i.imgur.com/PgmEBSB.jpg" />
-                      </div>
-                      <div class="grid-item">
-                        <img src="http://i.imgur.com/aboaFoB.jpg" />
-                      </div>
-                      <div class="grid-item">
-                        <img src="http://i.imgur.com/LkmcILl.jpg" />
-                      </div>
-                      <div class="grid-item">
-                        <img src="http://i.imgur.com/q9zO6tw.jpg" />
-                      </div>
-                      <div class="grid-item">
-                        <img src="http://i.imgur.com/r8p3Xgq.jpg" />
-                      </div>
-                      <div class="grid-item">
-                        <img src="http://i.imgur.com/hODreXI.jpg" />
-                      </div>
-                      <div class="grid-item">
-                        <img src="http://i.imgur.com/UORFJ3w.jpg" />
-                      </div>
-                      <div class="grid-item" style="background-color: {$ background $}; color: {$ color $}; height: 100px">
-              Hello World!
+        </div>
+        <div class="container">
+          <div id="body-content">
           </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <hr>
-
-            <footer>
-                <p>&copy; Company 2014</p>
-            </footer> -->
+          <hr>
+          <footer>
+              <p>&copy; Travel Shot 2015</p>
+          </footer>
         </div> <!-- /container -->
         
         <template id="panel-template">
@@ -158,6 +97,47 @@
                 </div>
             </div>
             <img data-sg-attr-bind="src: image_url" data-sg-portal="item_image" />
+          </div>
+        </template>
+        
+        <template id="login-panel">
+          <div class="view-port-max">
+              <div class="view-port-center" data-sg-portal="button_list">
+                <!-- <div class="login-button gplus-button">
+                  <div class="login-icon"></div>
+                  <div class="text-label">
+                    <div class="label-content">Sign in with Google</div>
+                    <div class="label-content">
+                      <span class="glyphicon glyphicon-plane plane-icon" aria-hidden="true"></span>
+                      - - - Google - - -
+                    </div>
+                  </div>
+                </div>
+                <hr>
+                <div class="login-button fb-button">
+                  <div class="login-icon"></div>
+                  <div class="text-label">
+                    <div class="label-content">Sign in with Facebook</div>
+                    <div class="label-content">
+                      <span class="glyphicon glyphicon-plane plane-icon" aria-hidden="true"></span>
+                      - - - Facebook - - -
+                    </div>
+                  </div>
+                </div> -->
+              </div>
+          </div>
+        </template>
+
+        <template id="login-button-template">
+          <div class="login-button {$ buttonClass $}">
+            <div class="login-icon"></div>
+            <div class="text-label">
+              <div class="label-content">{$ displayText $}</div>
+              <div class="label-content">
+                <span class="glyphicon glyphicon-plane plane-icon" aria-hidden="true"></span>
+                - - - {$ hoverText $} - - -
+              </div>
+            </div>
           </div>
         </template>
 
