@@ -798,6 +798,11 @@ var TSF = (function ($) {
                 displayText: 'Sign in with Goolge',
                 click: function (event) {
                     console.log('Do goggle login here');
+                    TSF.googleLogin(function (data) {
+                        // TODO: Check for login error
+                        console.log('Google login complete.');
+                        console.dir(data);
+                    });
                 }
             },
 
@@ -806,6 +811,11 @@ var TSF = (function ($) {
                 displayText: 'Sign in with Facebook',
                 click: function (event) {
                     console.log('Do facebook login here');
+                    // TODO: Check for login error
+                    TSF.facebookLogin(function (data) {
+                        console.log('Facebook login complete.');
+                        console.dir(data);
+                    });
                 }
             }
         ]));
