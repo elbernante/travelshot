@@ -1,4 +1,4 @@
-var tsf = (function ($) {
+var TSF = (function ($) {
 
     var util = function ($) {
         var _utils = {
@@ -672,12 +672,19 @@ var tsf = (function ($) {
                     $buttonPlace = $(self.portals['button_list']);
 
                 self.container.append($html);
-                $html.stop().hide().slideDown('slow', function () {
+                $.each(self.elements, function (i, o) {
+                    o.container = $buttonPlace;
+                    o.disable(true);
+                    o.load();
+                });
+
+                TSF.initAuthApis(function (data) {
                     $.each(self.elements, function (i, o) {
-                        o.container = $buttonPlace;
-                        o.load();
+                        o.disable(false);
                     });
                 });
+
+                $html.stop().hide().slideDown('slow');
                 return self;
             }
         });
@@ -691,6 +698,37 @@ var tsf = (function ($) {
                 });
 
                 return this;
+            },
+
+            html: function () {
+                if (this.cachedHtml) {
+                    return this.cachedHtml;
+                }
+
+                var self = this;
+                var html = Segue.Element.prototype.html.call(this);
+
+                // bind onclick event
+                $(html).on('click', function (event) {
+                    if ('function' === typeof self.options.model['click']) {
+                        self.options.model['click'].apply(self.options.model, arguments);
+                    }
+                });
+                
+                return html;
+            },
+
+            disable: function (bool) {
+                var self = this,
+                    $html = $(self.html());
+
+                if (0 < arguments.length) {
+                    $html.attr('disabled', !(!(bool)));
+                } else {
+                    $html.attr('disabled', true);
+                }
+
+                return self;
             },
 
             dismiss: function () {
@@ -748,7 +786,7 @@ var tsf = (function ($) {
         homePage.addChildElement(new Panel(asiaPanel));
         homePage.addChildElement(new Panel(asiaPanel));
 
-        //Segue.loadPage(homePage);
+        Segue.loadPage(homePage);
         w['myHomePage'] = homePage;
 
         var loginPage = new SPage('Login Page');
@@ -758,16 +796,20 @@ var tsf = (function ($) {
             {
                 buttonClass: 'gplus-button',
                 displayText: 'Sign in with Goolge',
-                hoverText: 'Google'
+                click: function (event) {
+                    console.log('Do goggle login here');
+                }
             },
 
             {
                 buttonClass: 'fb-button',
                 displayText: 'Sign in with Facebook',
-                hoverText: 'Facebook'
+                click: function (event) {
+                    console.log('Do facebook login here');
+                }
             }
         ]));
-        Segue.loadPage(loginPage);
+        //Segue.loadPage(loginPage);
         $('#signin').on('click', function (evt) {
             Segue.loadPage(loginPage, '/pages/login');
         });

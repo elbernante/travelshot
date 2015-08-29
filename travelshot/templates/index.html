@@ -11,10 +11,10 @@
         <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
         <!-- Place favicon.ico in the root directory -->
 
+        <link href='https://fonts.googleapis.com/css?family=Roboto:700' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='lib/bootstrap/3.3.5/css/bootstrap.min.css') }}">
         <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-        <link href='https://fonts.googleapis.com/css?family=Roboto:700' rel='stylesheet' type='text/css'>
         <script src="{{ url_for('static', filename='lib/modernizr/2.8.3/modernizr.min.js') }}"></script>
     </head>
     <body>
@@ -64,7 +64,7 @@
           <div id="body-content">
           </div>
           <hr>
-          <footer>
+          <footer class="page-footer">
               <p>&copy; Travel Shot 2015</p>
           </footer>
         </div> <!-- /container -->
@@ -102,29 +102,7 @@
         
         <template id="login-panel">
           <div class="view-port-max">
-              <div class="view-port-center" data-sg-portal="button_list">
-                <!-- <div class="login-button gplus-button">
-                  <div class="login-icon"></div>
-                  <div class="text-label">
-                    <div class="label-content">Sign in with Google</div>
-                    <div class="label-content">
-                      <span class="glyphicon glyphicon-plane plane-icon" aria-hidden="true"></span>
-                      - - - Google - - -
-                    </div>
-                  </div>
-                </div>
-                <hr>
-                <div class="login-button fb-button">
-                  <div class="login-icon"></div>
-                  <div class="text-label">
-                    <div class="label-content">Sign in with Facebook</div>
-                    <div class="label-content">
-                      <span class="glyphicon glyphicon-plane plane-icon" aria-hidden="true"></span>
-                      - - - Facebook - - -
-                    </div>
-                  </div>
-                </div> -->
-              </div>
+              <div class="view-port-center" data-sg-portal="button_list"></div>
           </div>
         </template>
 
@@ -132,10 +110,11 @@
           <div class="login-button {$ buttonClass $}">
             <div class="login-icon"></div>
             <div class="text-label">
-              <div class="label-content">{$ displayText $}</div>
               <div class="label-content">
-                <span class="glyphicon glyphicon-plane plane-icon" aria-hidden="true"></span>
-                - - - {$ hoverText $} - - -
+                {$ displayText $} 
+                <div class="plane-icon">
+                  <span class="glyphicon glyphicon-plane" aria-hidden="true"></span>
+                </div>
               </div>
             </div>
           </div>
