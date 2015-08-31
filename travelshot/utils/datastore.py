@@ -57,8 +57,11 @@ def new_category(title):
         cat = None
     return cat
 
+def get_category_by_id(id):
+    return Category.query.filter_by(id=id).first()
+
 def get_categories():
-    return Category.query.all();
+    return Category.query.all()
 
 
 ######### Items ############

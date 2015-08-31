@@ -130,13 +130,13 @@
             <div class="overlay">
                 <div class="overlay-dimmer">
                     <div class="item-author">
-                        <span><small>by:</small> Juan Esteban</span>
+                        <span><small>by:</small> {$ author.name $}</span>
                         <div class="item-author-img">
-                             <img class="img-circle" src="https://lh5.googleusercontent.com/-YXQIZO89UHg/AAAAAAAAAAI/AAAAAAAAAJE/KJFqVjwcaAU/photo.jpg" />
+                             <img class="img-circle" data-sg-attr-bind="src: author.picture" />
                         </div>
                     </div>
 
-                    <div class="item-title">Very very very very looooooooooooonnnngggg Title goes here</div>
+                    <div class="item-title">{$ title $}</div>
                 </div>
             </div>
             <img data-sg-attr-bind="src: image_url" data-sg-portal="item_image" />

@@ -25,6 +25,32 @@ def serialize_item_object(itemObj):
     item_dict = itemObj.serialize
     image_filename = '{}.{}'.format(itemObj.id, itemObj.image_type)
     item_dict['image_url'] = url_for('pages.view_mage', key=itemObj.salt, filename=image_filename)
+
+    user = ds.get_user_by_id(itemObj.author_id)
+    if user is None:
+        author = {
+            'id': itemObj.author_id,
+            'name': 'Unknown',
+            'picture': url_for('static', filename='images/user.jpg')
+        }
+    else:
+        author = {
+            'id': itemObj.author_id,
+            'name': user.name,
+            'picture': user.picture
+        }
+    item_dict['author'] = author
+
+    cat = ds.get_category_by_id(itemObj.category_id)
+    if cat is None:
+        category = {
+            'id': itemObj.category_id,
+            'name': 'Uncategorized'
+        }
+    else:
+        category = cat.serialize
+    item_dict['category'] = category
+    
     return item_dict
 
 
