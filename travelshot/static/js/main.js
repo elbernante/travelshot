@@ -18,6 +18,22 @@ var TSF = (function ($) {
                     data = {error: jqXHR.responseText};
                 }
                 _utils.functionify(callback)(data);
+            },
+
+            simpleGet: function (url, callback) {
+                var funcCallback = _utils.functionify(callback);
+
+                $.ajax({
+                    type: 'GET',
+                    url: url,
+                    dataType: 'json',
+                    success: function(data, textStatus, jqXHR) {
+                        funcCallback(data);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        _utils.errorHanlder(jqXHR, textStatus, errorThrown, funcCallback);
+                    }
+                });
             }
         };
 
@@ -53,6 +69,7 @@ var TSF = (function ($) {
             });
         };
 
+        g['csrfToken'] = $('meta[name=csrf-token]').attr('content');
         return {
             init: function (callback) {
                 if (!g['csrfToken']) {
@@ -287,18 +304,16 @@ var TSF = (function ($) {
                         contentType: 'application/octet-stream; charset=utf-8',
                         data: authResult['code'],
                         success: function(data, textStatus, jqXHR) {
-                            // TODO: Check if successful login, or user is already logged in.
-                            console.log("Success! User logged in Google.");
-                            console.dir(data);
+                            APP_GLOBALS.set('user', data);
                             funcCallback(data);
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
+                            APP_GLOBALS.set('user', undefined);
                             util.errorHanlder(jqXHR, textStatus, errorThrown, funcCallback);
                         }
                     });
                 } else {
-                    // TODO: Notify user for error
-                    console.log("ERROR: Unable to get authorization code.")
+                    APP_GLOBALS.set('user', undefined);
                     funcCallback({error: "Unable to get authorization code."});
                 }
             });
@@ -319,21 +334,86 @@ var TSF = (function ($) {
                         contentType: 'application/octet-stream; charset=utf-8',
                         data: response.authResponse['accessToken'],
                         success: function(data, textStatus, jqXHR) {
-                            // TODO: Check if successful login, or user is already logged in.
-                            console.log("Success! User logged in Facebook.");
-                            console.dir(data);
+                            APP_GLOBALS.set('user', data);
                             funcCallback(data);
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
+                            APP_GLOBALS.set('user', undefined);
                             util.errorHanlder(jqXHR, textStatus, errorThrown, funcCallback);
                         }
                     });
                 } else {
+                    APP_GLOBALS.set('user', undefined);
                     funcCallback({"error": "Unable to authenticate."});
                 }
             }, {
                 scope: 'public_profile email'
             });
+        },
+
+        logout: function (callback) {
+            var funcCallback = util.functionify(callback);
+            APP_GLOBALS.set('user', undefined);
+
+            util.simpleGet('/api/logout/', callback);
+        },
+
+        getSignedInUser: function (callback) {
+            var funcCallback = util.functionify(callback);
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/currentuser/',
+                headers: {'X-CSRFToken': APP_GLOBALS.get('csrfToken')},
+                dataType: 'json',
+                success: function(data, textStatus, jqXHR) {
+                    if (data['name'] && data['picture'] ) {
+                        APP_GLOBALS.set('user', data);
+                    } else {
+                        APP_GLOBALS.set('user', undefined);
+                    }
+                    funcCallback(data);
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    util.errorHanlder(jqXHR, textStatus, errorThrown, funcCallback);
+                }
+            });
+        },
+
+        hasActiveUser: function (callback) {
+            var funcCallback = util.functionify(callback);
+            this.getSignedInUser(function (data) {
+                if (!data['error'] && data['name'] && data['picture']) {
+                    funcCallback(true);
+                } else {
+                    funcCallback(false);
+                }
+            });
+        },
+
+        currentUser: function () {
+            return APP_GLOBALS.get('user');
+        },
+
+        getDataForPage: function (page, callback) {
+            var p = (arguments.length > 0 && 'string' === typeof arguments[0]) ? page : '';
+            p = (p.indexOf('?') > -1) ? p + '&d=1' : p + '?d=1';
+
+            var f = (arguments.length > 1) ? arguments[1] : arguments[0];
+
+            util.simpleGet(p, f);
+        },
+
+        getFeatured: function (callback) {
+            util.simpleGet('/api/featured/', callback);
+        },
+
+        getCategories: function (callback) {
+             util.simpleGet('/api/categories/', callback);
+        },
+
+        getItemsForCat: function (catId, callback) {
+            util.simpleGet('/api/items/' + catId + '/', callback);
         },
 
         newItem: function (itemObj) {
@@ -361,30 +441,74 @@ var TSF = (function ($) {
 
     $(function () {
 
+        var util = function () {
+            var $alertBox = $('#alert-box');
+            return {
+                alert: function (message, title) {
+                    $alertBox.find('.modal-title').text(title || 'Travel Shot');
+                    $alertBox.find('.modal-body p').text(message);
+                    $alertBox.modal('show');
+                }
+            };
+        }();
+
         var NavBar = Segue.Class('NavBar', {
             base: Segue.Element,
             init: function () {
+                var userObj = {
+                    name: Segue.bindable(''),
+                    photo: Segue.bindable('')
+                };
+
                 Segue.Element.call(this, {
                     templateNode: $('#page-nav-bar').get(0),
-                    model: {}
+                    model: userObj
                 });
 
                 var self = this,
                     $html = $(self.html());
 
+                self.user = userObj;
+                self.clickActions = {};
                 self.isAnimationInQueue = false,
                 self.triggerPoint = 100;
                 self.isUpdateCancelled = false;
+                self._hideQueue = new Map();
+
                 self.mointorFunc = function () {
                     self.didScrollMonitor.apply(self, arguments);
                 };
-
                 self.monitorScroll(true);
 
+                var setBtnAct = function (btn, key) {
+                    $(btn).find('>a:first-child').on('click', function (event) {
+                        if ('function' === typeof self.clickActions[key]) {
+                            self.clickActions[key]();
+                        }
+                    });
+                };
+                setBtnAct(self.portals['upload_button'], 'upload');
+                setBtnAct(self.portals['login_button'], 'login');
+                setBtnAct(self.portals['logout_button'], 'logout');
+
                 Segue.on('pageLoad', function (pageObj) {
-                    self.setMode(pageObj.navbar);
+                    self._udateBtnsWithPage(pageObj);
                 });
 
+                // Listen to when user logged in/out
+                 Segue.on('userevent', function () {
+                    var cur_page = Segue.storybook['currentPage'];
+                    if (cur_page) {
+                        self._udateBtnsWithPage(cur_page);
+                    }
+                 });
+
+                return self;
+            },
+
+            setActionFor: function (key, func) {
+                var self = this;
+                self.clickActions[key] = func;
                 return self;
             },
 
@@ -445,6 +569,98 @@ var TSF = (function ($) {
                     $w.off('scroll', self.mointorFunc);
                 }
                 return self;
+            },
+
+            _udateBtnsWithPage: function (pageObj) {
+                var self = this;
+                self.setMode(pageObj.navbar);
+                if (pageObj.isLoginPage) {
+                    self.hideButtons(true);
+                } else {
+                    self.hideUploadBtn(false)
+                    var user = TSF.currentUser();
+                    if (!user) {
+                        self.hideLoginBtn(false);
+                        self.hideUserBtn(true);
+                    } else {
+                        self.user.name(user.name);
+                        self.user.photo(user.picture);
+                        self.hideLoginBtn(true);
+                        self.hideUserBtn(false);
+                    }
+                }
+            },
+
+            _clearHideIdFor: function (obj) {
+                var self = this,
+                    hqId = self._hideQueue.get(obj);
+                if (hqId) {
+                    clearTimeout(hqId);
+                    self._hideQueue.delete(obj);
+                }
+            },
+
+            _hideButton: function (navBtn) {
+                var self = this,
+                    $btn = $(navBtn);
+
+                self._clearHideIdFor(navBtn);
+                $btn.find('a').addClass('nav-a-btn-hidden');
+                var hideId = setTimeout(function() {
+                    $btn.addClass('hidden');
+                    self._hideQueue.delete(navBtn);
+                }, 250);
+                self._hideQueue.set(navBtn, hideId);
+            },
+
+            _showButton: function (navBtn) {
+                var self = this,
+                    $btn = $(navBtn);
+
+                self._clearHideIdFor(navBtn);
+                $btn.removeClass('hidden');
+                 var hideId = setTimeout(function() {
+                    $btn.find('a').removeClass('nav-a-btn-hidden');
+                    self._hideQueue.delete(navBtn);
+                }, 200);
+                self._hideQueue.set(navBtn, hideId);
+            },
+
+            hideLoginBtn: function (bool) {
+                var self = this;
+                if (bool) {
+                    self._hideButton(self.portals['login_button']);
+                } else {
+                    self._showButton(self.portals['login_button']);
+                }
+                return self;
+            },
+
+            hideUploadBtn: function (bool) {
+                var self = this;
+                if (bool) {
+                    self._hideButton(self.portals['upload_button']);
+                } else {
+                    self._showButton(self.portals['upload_button']);
+                }
+                return self;
+            },
+
+            hideUserBtn: function (bool) {
+                var self = this;
+                if (bool) {
+                    self._hideButton(self.portals['user_button']);
+                } else {
+                    self._showButton(self.portals['user_button']);
+                }
+                return self;
+            },
+
+            hideButtons: function (bool) {
+                this.hideLoginBtn(bool);
+                this.hideUploadBtn(bool);
+                this.hideUserBtn(bool);
+                return this;
             }
         });
 
@@ -543,8 +759,14 @@ var TSF = (function ($) {
                     model: panelObj
                 });
 
-                for (var i = 0, l = panelObj.items.length; i < l; i++) {
-                    this.addChildElement(new ItemEntry(panelObj.items[i]));
+                this._isLoaded = false;
+                this._isRendered = false;
+                this._isRendering = false;
+
+                if (panelObj instanceof Array) {
+                    for (var i = 0, l = panelObj.items.length; i < l; i++) {
+                        this.addChildElement(new ItemEntry(panelObj.items[i]));
+                    }
                 }
 
                 return this;
@@ -569,10 +791,30 @@ var TSF = (function ($) {
                 return html;
             },
 
+            newItemArrived: function (itemEntryObj) {
+                var self = this,
+                    $grid = $(self.portals['item_list']);
+
+                self.addChildElement(itemEntryObj);
+                if (self._isLoaded) {
+                    if (!self._isRendered) {
+                        if (!self._isRendering) {
+                            self._renderElement();
+                        }
+                    } else {
+                        itemEntryObj.isotopeGrid = $grid;
+                        itemEntryObj.load();
+                    }
+                }
+                return self;
+            },
+
             dismiss: function () {
                 var self = this,
                     $html = $(self.html());
 
+                self._isLoaded = false;
+                self._isRendering = true;
                 $.each(self.elements, function (i, o) {
                     o.dismiss();
                 });
@@ -580,24 +822,45 @@ var TSF = (function ($) {
                 $html.stop().hide('slow', function () {
                     $html.remove();
                     self.uncacheHtlm();
+                    self._isRendering = false;
+                    self._isRendered = false;
                 });
                 return self;
             },
 
             load: function () {
                 var self = this,
-                    $html = $(self.html()),
-                    $grid = $(self.portals['item_list']);
+                    $html = $(self.html());
 
+                self._isLoaded = true;
+                self._isRendering = true;
+                self._isRendered = false;
                 self.container.append($html);
-                $html.stop().hide().show('slow', function () {
-                    $grid.isotope('layout');
-                    $.each(self.elements, function (i, o) {
-                        o.isotopeGrid = $grid;
-                        o.load();
-                    });
-                });
+                $html.hide();
+                self._renderElement();
                 return self;
+            },
+
+            _renderElement: function () {
+                var self = this;
+                self._isRendering = true;
+                
+                var $html = $(self.html()),
+                    $grid = $(self.portals['item_list']);
+               
+                if (0 < self.elements.length) {
+                    $html.show('slow', function () {
+                        $grid.isotope('layout');
+                        $.each(self.elements, function (i, o) {
+                            o.isotopeGrid = $grid;
+                            o.load();
+                        });
+                        self._isRendering = false;
+                        self._isRendered = true;
+                    });
+                } else {
+                    self._isRendering = false;
+                }
             }
         });
 
@@ -631,6 +894,38 @@ var TSF = (function ($) {
                         if (this.complete) $(this).load();
                     });
                 }
+                return self;
+            }
+        });
+        
+        var LogoutPanel = Segue.Class('LogoutPanel', {
+            base: Segue.Element,
+            init: function () {
+                Segue.Element.call(this, {
+                    templateNode: $('#logout-panel').get(0),
+                    model: {}
+                });
+
+                return this;
+            },
+
+            dismiss: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                $html.stop().slideUp('slow', function () {
+                    $html.remove();
+                    self.uncacheHtlm();
+                });
+                return self;
+            },
+
+            load: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                self.container.append($html);
+                $html.stop().hide().slideDown('slow');
                 return self;
             }
         });
@@ -753,83 +1048,292 @@ var TSF = (function ($) {
         });
 
 
-        // Instantiations
-        var asiaPanel = {
-            title: Segue.bindable('Asia Town'),
-            items: [
-                {image_url: 'http://i.imgur.com/bwy74ok.jpg'},
-                {image_url: 'http://i.imgur.com/bAZWoqx.jpg'},
-                {image_url: 'http://i.imgur.com/PgmEBSB.jpg'},
-                {image_url: 'http://i.imgur.com/aboaFoB.jpg'},
-                {image_url: 'http://i.imgur.com/LkmcILl.jpg'},
-                {image_url: 'http://i.imgur.com/q9zO6tw.jpg'},
-                {image_url: 'http://i.imgur.com/r8p3Xgq.jpg'},
-                {image_url: 'http://i.imgur.com/hODreXI.jpg'},
-                {image_url: 'http://i.imgur.com/UORFJ3w.jpg'}
-            ]
-        };
-        w['asiaPanel'] = asiaPanel;
+        var PageFactory = function () {
+            var cachedPages = {};
 
+            var createLoginPage = function () {
+                if (cachedPages['loginpage']) {
+                    return cachedPages['loginpage'];
+                }
+
+                var loginPage = new SPage('Login Page');
+                loginPage.navbar = 'shrink';
+                loginPage.showCover = false;
+                loginPage.isLoginPage = true;
+
+                loginPage.loadNext = function () {
+                    var self = this;
+                    if (self.next) {
+                        Segue.loadPage(self.next, self.nextUrl);
+                    } else {
+                        PageFactory.loadHomePage();
+                    }
+                };
+
+                loginPage.addChildElement(new LoginPanel([
+                    {
+                        buttonClass: 'gplus-button',
+                        displayText: 'Sign in with Goolge',
+                        click: function (event) {
+                            TSF.googleLogin(function (data) {
+                                if (data['error']) {
+                                    util.alert('There was an error authenticating the user.');
+                                } else {
+                                    loginPage.loadNext();
+                                }
+                            });
+                        }
+                    },
+
+                    {
+                        buttonClass: 'fb-button',
+                        displayText: 'Sign in with Facebook',
+                        click: function (event) {
+                            TSF.facebookLogin(function (data) {
+                                if (data['error']) {
+                                    util.alert('There was an error authenticating the user.');
+                                } else {
+                                    loginPage.loadNext();
+                                }
+                            });
+                        }
+                    }
+                ]));
+
+                cachedPages['loginpage'] = loginPage;
+                return loginPage;
+            };
+
+            var createLogoutPage = function () {
+                if (cachedPages['lougoutpage']) {
+                    return cachedPages['lougoutpage'];
+                }
+
+                var logoutPage = new SPage('Logout Page');
+                logoutPage.navbar = 'shrink';
+                logoutPage.showCover = false;
+
+                logoutPage.addChildElement(new LogoutPanel());
+
+                cachedPages['lougoutpage'] = logoutPage;
+                return logoutPage;
+            };
+
+            var pageLoaders = {
+                homepage: function (pageData) {
+                    var homePage = new SPage('Home Page');
+                    homePage.showCover = true;
+                    // var latestPanel = new Panel({
+                    //     id: 'latest',
+                    //     name: 'Latest Shots'
+                    // });
+                    // homePage.addChildElement(latestPanel);
+                    TSF.getCategories(function (categories) {
+                        $.each(categories, function (i, o) {
+                            var panelObj = new Panel(o);
+                            homePage.addChildElement(panelObj);
+                            TSF.getItemsForCat(o['id'], function (data) {
+                                if (!data['error'] && data instanceof Array) {
+                                    $.each(data, function (itemI, itemO) {
+                                        panelObj.newItemArrived(new ItemEntry(itemO));
+                                    });
+                                }
+                            });
+                        });
+                        Segue.loadPage(homePage, '/');
+                    });
+                },
+
+                loginpage: function (pageData) {
+                    Segue.loadPage(createLoginPage());
+                }
+            };
+
+            Segue.on('pageLoad', function (pageObj) {
+                if (pageObj.isLoginPage) {
+                    TSF.hasActiveUser(function (isSignedIn) {
+                        if (isSignedIn && pageObj.loadNext) {
+                            pageObj.loadNext();
+                        }
+                    });
+                }
+            });
+
+            return {
+                loadPageForData: function (data) {
+                    if (pageLoaders[data['pagetype']]) {
+                        pageLoaders[data['pagetype']](data);
+                    } else {
+                        util.alert('Ivalid page data. Please contact administrator.');
+                    }
+                },
+
+                loadHomePage: function () {
+                    pageLoaders['homepage']();
+                },
+
+                loadLoginPage: function () {
+                    var curPage = Segue['storybook']['currentPage'],
+                        loginPage = createLoginPage(),
+                        logoutPage = createLogoutPage();
+
+                    loginPage.next = (curPage && curPage !== loginPage && curPage !== logoutPage) ? curPage : false;
+                    loginPage.nextUrl = d.location.pathname;
+
+                    Segue.loadPage(loginPage, '/pages/login/');
+                },
+
+                loadLogoutPage: function () {
+                    TSF.logout(function () {
+                        Segue.loadPage(createLogoutPage(), '/pages/logout/')
+                    });
+                }
+            };
+        }();
+        
+
+        // Commence Data Loading
+
+        // Setup navigation bar
         var navBar = new NavBar();
-        w['navBar'] = navBar;
+        navBar.setActionFor('login', function () {
+           PageFactory.loadLoginPage();
+        })
 
-        var pageCover = new Cover();
-        // TODO: Load only first image.
-        //          load suceeding images 5 seconds later
-        //          to allow the rest of the page to load first
-        pageCover.addImage('static/images/cover_1.jpg');
-        pageCover.addImage('static/images/cover_2.jpg');
-        pageCover.addImage('static/images/cover_3.jpg');
+        navBar.setActionFor('logout', function () {
+           PageFactory.loadLogoutPage();
+        })
 
-        var homePage = new SPage('Home Page');
-        homePage.showCover = true;
-        homePage.addChildElement(new Panel(asiaPanel));
-        homePage.addChildElement(new Panel(asiaPanel));
-
-        Segue.loadPage(homePage);
-        w['myHomePage'] = homePage;
-
-        var loginPage = new SPage('Login Page');
-        loginPage.navbar = 'shrink';
-        loginPage.showCover = false;
-        loginPage.addChildElement(new LoginPanel([
-            {
-                buttonClass: 'gplus-button',
-                displayText: 'Sign in with Goolge',
-                click: function (event) {
-                    console.log('Do goggle login here');
-                    TSF.googleLogin(function (data) {
-                        // TODO: Check for login error
-                        console.log('Google login complete.');
-                        console.dir(data);
-                    });
-                }
-            },
-
-            {
-                buttonClass: 'fb-button',
-                displayText: 'Sign in with Facebook',
-                click: function (event) {
-                    console.log('Do facebook login here');
-                    // TODO: Check for login error
-                    TSF.facebookLogin(function (data) {
-                        console.log('Facebook login complete.');
-                        console.dir(data);
-                    });
-                }
+        // Get Current user
+        TSF.getSignedInUser(function (user) {
+            if (user['name'] && user['picture']) {
+                Segue.fireEvent('userevent');
             }
-        ]));
-        //Segue.loadPage(loginPage);
-        $('#signin').on('click', function (evt) {
-            Segue.loadPage(loginPage, '/pages/login');
         });
 
-        var uploadPage = new SPage('Upload Page');
-        uploadPage.navbar = 'grow';
-        uploadPage.showCover = true;
-        $('#upload').on('click', function (evt) {
-            Segue.loadPage(uploadPage, '/pages/upload');
+        // Get page data
+        TSF.getDataForPage(function (data) {
+            if (data['error']) {
+                util.alert('An error occurred while retrieving data. Please reload page.');
+            } else {
+                var clearPageMess = function () {
+                    $('#body-content').empty();
+                    Segue.off('pageWillLoad', clearPageMess);
+                }
+                Segue.on('pageWillLoad', clearPageMess);
+                PageFactory.loadPageForData(data);
+            }
         });
+
+        // Get images for the page cover
+        TSF.getFeatured(function (data) {
+            var pageCover = new Cover();
+            if (data instanceof Array) {
+                // Load only 1 image first
+                var img1 = data.pop();
+                if (img1) {
+                    pageCover.addImage(img1)
+                }
+
+                // Load all other images 6 seconds later
+                //      to yeild bandwith to other page data
+                setTimeout(function () {
+                    $.each(data, function (i, o) {
+                        pageCover.addImage(o);
+                    });
+                }, 6000);
+            }
+        });
+
+
+
+
+        // Instantiations
+        // var asiaPanel = {
+        //     title: Segue.bindable('Asia Town'),
+        //     items: [
+        //         {image_url: 'http://i.imgur.com/bwy74ok.jpg'},
+        //         {image_url: 'http://i.imgur.com/bAZWoqx.jpg'},
+        //         {image_url: 'http://i.imgur.com/PgmEBSB.jpg'},
+        //         {image_url: 'http://i.imgur.com/aboaFoB.jpg'},
+        //         {image_url: 'http://i.imgur.com/LkmcILl.jpg'},
+        //         {image_url: 'http://i.imgur.com/q9zO6tw.jpg'},
+        //         {image_url: 'http://i.imgur.com/r8p3Xgq.jpg'},
+        //         {image_url: 'http://i.imgur.com/hODreXI.jpg'},
+        //         {image_url: 'http://i.imgur.com/UORFJ3w.jpg'}
+        //     ]
+        // };
+        // w['asiaPanel'] = asiaPanel;
+
+        // var navBar = new NavBar();
+        // w['navBar'] = navBar;
+
+        // var pageCover = new Cover();
+        // // TODO: Load only first image.
+        // //          load suceeding images 5 seconds later
+        // //          to allow the rest of the page to load first
+        // pageCover.addImage('/static/images/cover_1.jpg');
+        // pageCover.addImage('/static/images/cover_2.jpg');
+        // pageCover.addImage('/static/images/cover_3.jpg');
+
+        // var homePage = new SPage('Home Page');
+        // homePage.showCover = true;
+        // homePage.addChildElement(new Panel(asiaPanel));
+        // homePage.addChildElement(new Panel(asiaPanel));
+
+        // //$('#body-content').empty();
+        // //Segue.loadPage(homePage);
+        // w['myHomePage'] = homePage;
+
+        // Login Page
+        // var loginPage = new SPage('Login Page');
+        // loginPage.navbar = 'shrink';
+        // loginPage.showCover = false;
+        // loginPage.isLoginPage = true;
+        // loginPage.addChildElement(new LoginPanel([
+        //     {
+        //         buttonClass: 'gplus-button',
+        //         displayText: 'Sign in with Goolge',
+        //         click: function (event) {
+        //             console.log('Do goggle login here');
+        //             TSF.googleLogin(function (data) {
+        //                 // TODO: Check for login error
+        //                 console.log('Google login complete.');
+        //                 console.dir(data);
+        //             });
+        //         }
+        //     },
+
+        //     {
+        //         buttonClass: 'fb-button',
+        //         displayText: 'Sign in with Facebook',
+        //         click: function (event) {
+        //             console.log('Do facebook login here');
+        //             // TODO: Check for login error
+        //             TSF.facebookLogin(function (data) {
+        //                 console.log('Facebook login complete.');
+        //                 console.dir(data);
+        //             });
+        //         }
+        //     }
+        // ]));
+
+        // navBar.setActionFor('login', function () {
+        //     var curPage = Segue['storybook']['currentPage'];
+        //     loginPage.next = (curPage && curPage !== loginPage) ? curPage : false;
+        //     Segue.loadPage(loginPage, '/pages/login/');
+        // })
+
+
+        // // Upload Page
+        // var uploadPage = new SPage('Upload Page');
+        // uploadPage.navbar = 'grow';
+        // uploadPage.showCover = true;
+
+        // navBar.setActionFor('upload', function () {
+        //     Segue.loadPage(uploadPage, '/pages/upload/');
+        // })
+
 
         // var myModel = new function () {
         //     var self = this;

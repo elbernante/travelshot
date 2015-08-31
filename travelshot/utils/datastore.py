@@ -4,6 +4,7 @@ Contains utility functions
 
 from sqlalchemy.exc import IntegrityError
 
+
 from ..models import db
 from ..models import User
 from ..models import Category
@@ -57,7 +58,7 @@ def new_category(title):
     return cat
 
 def get_categories():
-    return Category.query().all();
+    return Category.query.all();
 
 
 ######### Items ############
@@ -91,3 +92,10 @@ def get_item_by_id(item_id):
 
 def get_item_with_id_salt_type_or_404(id, salt, image_type):
     return Item.query.filter_by(id=id, salt=salt, image_type=image_type).first_or_404()
+
+def get_latest_items(limit=8, page=0):
+    return Item.query.order_by(Item.date_created.desc()).limit(limit).offset(page)
+
+def get_items_for_category(category_id, limit=8, page=0):
+    return Item.query.filter_by(category_id=category_id).order_by(Item.date_created.desc()).limit(limit).offset(page)
+

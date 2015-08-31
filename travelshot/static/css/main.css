@@ -105,7 +105,7 @@ textarea {
 /************************ Navigation Bar ************************/
 /* Normal/Shrink navbar */
 .navbar {
-    background-color: #FF5108;
+    background-color: #FF5208;
     height: 50px;
 }
 
@@ -115,7 +115,7 @@ textarea {
     width: auto;
 }
 
-.navbar-header .navbar-brand img:last-child {
+.navbar-header .navbar-brand img:first-child {
     opacity: 1;
 }
 
@@ -123,18 +123,119 @@ textarea {
     opacity: 0;
 }
 
+/* Nav bar buttons*/
+.navbar-nav>li>a.nav-a-btn {
+    cursor: pointer;
+    color: #FF5208;
+    background-color: #FFF;
+    border-style: solid;
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: #FFD3C1;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.navbar-nav>li>a.nav-a-btn:hover {
+    background-color: #FFD3C1;
+    border-color: #FF8B5A;
+    color: #FF5208;
+}
+
+.navbar-grow .navbar-nav>li>a.nav-a-btn {
+    margin-top: 16px;
+    -webkit-box-shadow: 6px 6px 16px -1px rgba(0,0,0,0.5);
+       -moz-box-shadow: 6px 6px 16px -1px rgba(0,0,0,0.5);
+            box-shadow: 6px 6px 16px -1px rgba(0,0,0,0.5);
+}
+
+/* Upload Button */
+.navbar-default .navbar-nav>li>a.btn-upload {
+    color: #FFF;
+    background-color: #05AE6A;
+    border-color: #B0E8D2;
+}
+
+.navbar-default .navbar-nav>li>a.btn-upload:hover {
+    background-color: #43BD8C;
+    border-color: #B0E8D2;
+}
+
+.navbar-grow .navbar-nav>li>a.btn-upload {
+    background-color: #FF5208;
+    border-color: #FF8B5A;
+}
+
+.navbar-grow .navbar-nav>li>a.btn-upload:hover {
+    background-color: #FF8B5A;
+    border-color: #FFD3C1;
+}
+
+/* User Button */
+.navbar-nav>li>a.btn-user {
+    color: #FFF;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.navbar-nav > li .user-img {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+}
+
+.navbar-nav > li .user-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.navbar-grow .navbar-nav>li>a.btn-user {
+    color: #FFF;
+    margin-top: 11px;
+    height: 60px;
+    -webkit-filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
+       -moz-filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
+            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
+}
+
+.navbar-grow .navbar-nav>li>a.btn-user:hover {
+    color: #FF5208
+}
+
+/* Hidden nav bar button */
+.navbar-nav > li  a.nav-a-btn-hidden {
+    width: 0px;
+    padding-left: 0px;
+    padding-right: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+    border-left: 0px;
+    border-right: 0px;
+}
+
 .navbar,
-.navbar-header .navbar-brand img,
-.navbar ul > li{
+.navbar-header .navbar-brand img {
     -webkit-transition: all 0.2s ease-in-out;
        -moz-transition: all 0.2s ease-in-out;
          -o-transition: all 0.2s ease-in-out;
             transition: all 0.2s ease-in-out;
 }
 
-.navbar .btn{
-    margin-left:5px;
+.navbar ul > li,
+.navbar ul > li > a {
+    -webkit-transition: margin 0.2s ease-in-out, width 0.2s ease-in-out, padding 0.2s ease-in-out, border 0.2s ease-in-out;
+       -moz-transition: margin 0.2s ease-in-out, width 0.2s ease-in-out, padding 0.2s ease-in-out, border 0.2s ease-in-out;
+         -o-transition: margin 0.2s ease-in-out, width 0.2s ease-in-out, padding 0.2s ease-in-out, border 0.2s ease-in-out;
+            transition: margin 0.2s ease-in-out, width 0.2s ease-in-out, padding 0.2s ease-in-out, border 0.2s ease-in-out;
 }
+
 
 /* Bigger clear navbar*/
 .navbar-grow {
@@ -148,7 +249,7 @@ textarea {
     width: auto;
 }
 
-.navbar-grow .navbar-header .navbar-brand img:last-child {
+.navbar-grow .navbar-header .navbar-brand img:first-child {
     opacity: 0;
 }
 
@@ -156,9 +257,11 @@ textarea {
     opacity: 1;
 }
 
-.navbar-grow ul > li{
+/*.navbar-grow ul > li{
     padding-top: 20px;
-}
+}*/
+
+
 
 
 /************************ END: Navigation Bar ************************/
@@ -193,7 +296,7 @@ textarea {
     width: 100%;
     height: 100%;
     padding-bottom: 6px;
-    background-color: #FF5108;
+    background-color: #FF5208;
 }
 
 .featured_shots {
@@ -257,7 +360,7 @@ textarea {
 }
 
 .fronter h1 {
-    color: #FF5108;
+    color: #FF5208;
     text-shadow: 2px 2px 12px #000000;
 }
 
@@ -282,9 +385,9 @@ textarea {
 }
 
 .panel-default>.panel-heading {
-    color: #FF5108;
+    color: #FF5208;
     background: transparent;
-    border-color: #FF5108;
+    border-color: #FF5208;
     padding: 10px 15px 0px 15px;
 }
 
@@ -423,7 +526,15 @@ textarea {
 .view-port-center {
     display: inline-block;
 
-    text-align: center;
+    position: relative;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+       -moz-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+}
+
+.shadowed-box {
     padding: 60px 60px 60px 60px;
     border-radius: 10px;
 
@@ -434,13 +545,6 @@ textarea {
     -webkit-box-shadow: 2px 2px 5px 3px rgba(143, 143, 143, 0.1);
        -moz-box-shadow: 2px 2px 5px 3px rgba(143, 143, 143, 0.1);
             box-shadow: 2px 2px 5px 3px rgba(143, 143, 143, 0.1);
-
-    position: relative;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-       -moz-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
 }
 
 .login-button {
@@ -507,9 +611,9 @@ textarea {
     overflow: hidden;
     height: 20px;
     width: 0px;
-    -webkit-transform: translateY(4px);
-       -moz-transform: translateY(4px);
-            transform: translateY(4px);
+    -webkit-transform: translateY(3px);
+       -moz-transform: translateY(3px);
+            transform: translateY(3px);
 
     -webkit-transition: width 0.2s ease-out;
        -moz-transition: width 0.2s ease-out;

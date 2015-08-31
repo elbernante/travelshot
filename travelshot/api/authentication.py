@@ -48,6 +48,15 @@ def nilatch():
     # print("User ID: " + str(user.serialize))
     return 'Test User Added'
 
+@api.route('/currentuser/', methods=['GET'])
+@util.csrf_protect_enable
+@util.format_response
+def get_current_user():
+    current_user = ds.get_user_by_id(login_session['user_id'])
+    if current_user is None:
+        return 'None'
+    return current_user.serialize
+
 
 @api.route('/requestlogin/', methods=['GET'])
 @util.csrf_protect_enable
@@ -55,7 +64,6 @@ def nilatch():
 def login_key():
     '''Docstring for login_key goes here'''
     state = util.random_key()
-    login_session['X-Ts-Login-Token'] = state
     key_set = {
         "state": state,
         "gplus_options": {
@@ -198,7 +206,8 @@ def gconnect():
     stored_gplus_id = login_session.get('gplus_id')
     if stored_credentials is not None and gplus_id == stored_gplus_id:
         # TODO: Return user object
-        return {'success': 'User is already logged in.'}
+        # return {'success': 'User is already logged in.'}
+        return _get_current_user().serialize
 
     # Get user info
     (user_info, message) = _g_plus_get_user_info(credentials)
@@ -321,7 +330,8 @@ def fbconnect():
     stored_fb_id = login_session.get('facebook_id')
     if stored_access_token is not None and user_info['id'] == stored_fb_id:
         # TODO: Return user object
-        return {'success': 'User is already logged in.'}
+        # return {'success': 'User is already logged in.'}
+        return _get_current_user().serialize
 
     # Dump user info to session
     _dump_user_info_to_session(user_info, 'facebook')
@@ -368,6 +378,11 @@ def log_out():
     else:
         raise BadRequest('Invalid login session.')
 
+def _get_current_user():
+    current_user = ds.get_user_by_id(login_session['user_id'])
+    if current_user is None:
+        raise BadRequest('Invalid login session')
+    return current_user
 
 # # TODO: Remove this function
 # @api.route('/upload/', methods=['GET', 'POST'])

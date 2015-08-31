@@ -105,7 +105,7 @@ def csrf_protect_enable(func):
     '''Decorator for to check for csrf token'''
     @wraps(func)
     def wrapper(*args, **kwargs):
-        csrf.protect();
+        csrf.protect()
         return func(*args, **kwargs)
     return wrapper
 

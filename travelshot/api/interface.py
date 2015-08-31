@@ -21,6 +21,51 @@ from . import api
 
 import json
 
+def serialize_item_object(itemObj):
+    item_dict = itemObj.serialize
+    image_filename = '{}.{}'.format(itemObj.id, itemObj.image_type)
+    item_dict['image_url'] = url_for('pages.view_mage', key=itemObj.salt, filename=image_filename)
+    return item_dict
+
+
+@api.route('/featured/', methods=['GET'])
+@util.format_response
+def featured_images():
+    images = [
+        url_for('static', filename='images/cover_1.jpg'),
+        url_for('static', filename='images/cover_2.jpg'),
+        url_for('static', filename='images/cover_3.jpg')
+    ]
+    return images
+
+@api.route('/categories/', methods=['GET'])
+@util.format_response
+def get_categories():
+    res = ds.get_categories()
+    cats = []
+    for v in res:
+        cats.append(v.serialize)
+    return cats
+
+@api.route('/items/<int:category_id>/', methods=['GET'])
+@util.format_response
+def get_items_for_category(category_id):
+    print(type(category_id))
+    res = ds.get_items_for_category(category_id)
+    items = []
+    for v in res:
+        items.append(serialize_item_object(v))
+    return items
+
+@api.route('/items/latest/', methods=['GET'])
+@util.format_response
+def get_latest_items():
+    res = ds.get_latest_items()
+    items = []
+    for v in res:
+        items.append(serialize_item_object(v))
+    return items
+
 @api.route('/item/new/', methods=['POST'])
 @util.csrf_protect_enable
 @util.require_login
@@ -48,9 +93,10 @@ def upload_new_item():
     image_filename = '{}.{}'.format(item.id, img_type)
     image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
 
-    item_dict = item.serialize
-    item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
-    return item_dict
+    # TODO: Remove commented code
+    # item_dict = item.serialize
+    # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
+    return serialize_item_object(item)
 
 
 @api.route('/item/edit/<item_id>/', methods=['POST'])
@@ -77,9 +123,9 @@ def edit_item(item_id):
     if item.author_id != login_session.get('user_id'):
         raise Unauthorized('Edit access denied.')
 
-    item.title = new_info.get('title', None) or item.title
-    item.category_id = new_info.get('category', None) or item.category_id
-    item.description = new_info.get('description', None) or item.description
+    item.title = data.get('title', None) or item.title
+    item.category_id = data.get('category', None) or item.category_id
+    item.description = data.get('description', None) or item.description
 
     # Check if image was changed
     image = request.files.get('image', None)
@@ -98,22 +144,23 @@ def edit_item(item_id):
     if image is not None:
         image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
 
-    item_dict = item.serialize
-    item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
-    return item_dict
+    # TODO: Remove commented code
+    # item_dict = item.serialize
+    # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
+    return serialize_item_object(item)
 
 
-@api.route('/tesapi/', methods=['GET', 'POST'])
-@util.format_response
-def test_api_route():
-    print(request.content_type)
-    if request.content_type == 'application/json':
-        print json.dumps(request.json)
-    print(request.data)
-    print("By form:")
-    for k, v in request.form.items():
-        print(k, v)
-    return 'OK'
+# @api.route('/tesapi/', methods=['GET', 'POST'])
+# @util.format_response
+# def test_api_route():
+#     print(request.content_type)
+#     if request.content_type == 'application/json':
+#         print json.dumps(request.json)
+#     print(request.data)
+#     print("By form:")
+#     for k, v in request.form.items():
+#         print(k, v)
+#     return 'OK'
 
 
 # fh = open("imageToSave.png", "wb")

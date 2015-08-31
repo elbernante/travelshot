@@ -89,6 +89,16 @@ function copyOwnPropertiesFrom(target, source) {
     };
     registerName('on', onFunc);
 
+    var offFunc = function (eventName, callbackRef) {
+        if (segue['listeners'][eventName]) {
+            var i = segue['listeners'][eventName].indexOf(callbackRef);
+            if (i > -1 ) {
+                segue['listeners'][eventName].splice(i, 1);
+            }
+        }
+    };
+    registerName('off', offFunc);
+
     var fireEvent = function (eventName) {
         var listenerArr = segue['listeners'][eventName];
         if (listenerArr) {
@@ -193,6 +203,7 @@ function copyOwnPropertiesFrom(target, source) {
             storybook['currentPage'].dismiss();
         }
 
+        segue['fireEvent']('pageWillLoad', pageObj);
         storybook['currentPage'] = pageObj;
         pageObj.load();
         segue['fireEvent']('pageLoad', pageObj);
@@ -218,6 +229,8 @@ function copyOwnPropertiesFrom(target, source) {
                 }
                 storybook['currentPage'].dismiss();
             }
+
+            segue['fireEvent']('pageWillLoad', pageObj);
             storybook['currentPage'] = pageObj;
             pageObj.load();
             segue['fireEvent']('pageLoad', pageObj);
