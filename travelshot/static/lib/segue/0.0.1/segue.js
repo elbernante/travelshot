@@ -99,6 +99,15 @@ function copyOwnPropertiesFrom(target, source) {
     };
     registerName('off', offFunc);
 
+    var oneFunc = function (eventName, callback) {
+        var funcWrap = function () {
+            callback.apply(this, arguments);
+            offFunc(eventName, funcWrap);
+        }
+        onFunc(eventName, funcWrap);
+    }
+    registerName('one', oneFunc);
+
     var fireEvent = function (eventName) {
         var listenerArr = segue['listeners'][eventName];
         if (listenerArr) {

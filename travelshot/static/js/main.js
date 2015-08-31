@@ -1156,10 +1156,19 @@ var TSF = (function ($) {
             };
 
             Segue.on('pageLoad', function (pageObj) {
-                if (pageObj.isLoginPage) {
+                if (pageObj.isLoginPage || pageObj.requireLogin) {
                     TSF.hasActiveUser(function (isSignedIn) {
-                        if (isSignedIn && pageObj.loadNext) {
+                        if (pageObj.isLoginPage && isSignedIn && pageObj.loadNext) {
                             pageObj.loadNext();
+                            return;
+                        }
+
+                        if (pageObj.requireLogin && !isSignedIn) {
+                            var lp = createLoginPage();
+                            lp.next = pageObj;
+                            lp.nextUrl = d.location.pathname;
+                            Segue.loadPage(lp, '/pages/login/');
+                            return;
                         }
                     });
                 }
@@ -1220,11 +1229,9 @@ var TSF = (function ($) {
             if (data['error']) {
                 util.alert('An error occurred while retrieving data. Please reload page.');
             } else {
-                var clearPageMess = function () {
+                Segue.one('pageWillLoad', function () {
                     $('#body-content').empty();
-                    Segue.off('pageWillLoad', clearPageMess);
-                }
-                Segue.on('pageWillLoad', clearPageMess);
+                });
                 PageFactory.loadPageForData(data);
             }
         });
