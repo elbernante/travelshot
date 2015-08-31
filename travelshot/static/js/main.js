@@ -1146,6 +1146,12 @@ var TSF = (function ($) {
 
                 loginpage: function (pageData) {
                     Segue.loadPage(createLoginPage());
+                },
+
+                logoutpage: function (pageData) {
+                    TSF.logout(function () {
+                        Segue.loadPage(createLogoutPage(), '/pages/logout/')
+                    });
                 }
             };
 
@@ -1184,9 +1190,7 @@ var TSF = (function ($) {
                 },
 
                 loadLogoutPage: function () {
-                    TSF.logout(function () {
-                        Segue.loadPage(createLogoutPage(), '/pages/logout/')
-                    });
+                    pageLoaders['lougoutpage']();
                 }
             };
         }();

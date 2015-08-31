@@ -45,6 +45,18 @@ def login():
 
     return render_template('index.html')
 
+@pages.route('/logout/')
+def logout():
+    '''Test route'''
+    is_requesting_data = False
+    if request and request.args:
+        is_requesting_data = request.args.get('d', '0') == '1'
+
+    if is_requesting_data:
+        return format_data_response({'pagetype': 'logoutpage'})
+
+    return render_template('index.html')
+
 
 @pages.route('/upload/')
 def upload():
