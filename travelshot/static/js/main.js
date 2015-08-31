@@ -1190,7 +1190,7 @@ var TSF = (function ($) {
                 },
 
                 loadLogoutPage: function () {
-                    pageLoaders['lougoutpage']();
+                    pageLoaders['logoutpage']();
                 }
             };
         }();
