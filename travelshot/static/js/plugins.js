@@ -372,12 +372,147 @@
 }(jQuery));
 /////////////////// END: Image Drop Plugin ///////////////////
 
+/////////////////// Image Resizer ///////////////////
+(function ($) {
+    var className = 'ImageResizer';
+    
+    var defaults = {
+        maxWidth: 600,
+        quality: 0.9
+    };
+
+    var ImageResizer = function (options) {
+        this.settings = $.extend({}, defaults, options);
+        return this;
+    };
+
+    ImageResizer.prototype.scaleImage = function(imgElement) {
+        var canvas = document.createElement('canvas');
+        canvas.width = imgElement.width;
+        canvas.height = imgElement.height;
+        canvas.getContext('2d').drawImage(imgElement, 0, 0, canvas.width, canvas.height);
+
+        while (canvas.width >= (2 * this.settings.maxWidth)) {
+            canvas = this.getHalfScaleCanvas(canvas);
+        }
+
+        if (canvas.width > this.settings.maxWidth) {
+            canvas = this.scaleCanvasWithAlgorithm(canvas);
+        }
+
+        var imageData = canvas.toDataURL('image/jpeg', this.settings.quality);
+        return this.dataURLToBlob(imageData);
+    };
+
+    ImageResizer.prototype.dataURLToBlob = function(dataURL) {
+        var BASE64_MARKER = ';base64,';
+        if (dataURL.indexOf(BASE64_MARKER) == -1) {
+            var parts = dataURL.split(',');
+            var contentType = parts[0].split(':')[1];
+            var raw = parts[1];
+
+            return new Blob([raw], {type: contentType});
+        }
+
+        var parts = dataURL.split(BASE64_MARKER);
+        var contentType = parts[0].split(':')[1];
+        var raw = window.atob(parts[1]);
+        var rawLength = raw.length;
+
+        var uInt8Array = new Uint8Array(rawLength);
+
+        for (var i = 0; i < rawLength; ++i) {
+            uInt8Array[i] = raw.charCodeAt(i);
+        }
+
+        return new Blob([uInt8Array], {type: contentType});
+    };
+
+    ImageResizer.prototype.scaleCanvasWithAlgorithm = function(canvas) {
+        var scaledCanvas = document.createElement('canvas');
+
+        var scale = this.settings.maxWidth / canvas.width;
+
+        scaledCanvas.width = canvas.width * scale;
+        scaledCanvas.height = canvas.height * scale;
+
+        var srcImgData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+        var destImgData = scaledCanvas.getContext('2d').createImageData(scaledCanvas.width, scaledCanvas.height);
+
+        this.applyBilinearInterpolation(srcImgData, destImgData, scale);
+
+        scaledCanvas.getContext('2d').putImageData(destImgData, 0, 0);
+
+        return scaledCanvas;
+    };
+
+    ImageResizer.prototype.getHalfScaleCanvas = function(canvas) {
+        var halfCanvas = document.createElement('canvas');
+        halfCanvas.width = canvas.width / 2;
+        halfCanvas.height = canvas.height / 2;
+
+        halfCanvas.getContext('2d').drawImage(canvas, 0, 0, halfCanvas.width, halfCanvas.height);
+
+        return halfCanvas;
+    };
+
+    ImageResizer.prototype.applyBilinearInterpolation = function(srcCanvasData, destCanvasData, scale) {
+        function inner(f00, f10, f01, f11, x, y) {
+            var un_x = 1.0 - x;
+            var un_y = 1.0 - y;
+            return (f00 * un_x * un_y + f10 * x * un_y + f01 * un_x * y + f11 * x * y);
+        }
+        var i, j;
+        var iyv, iy0, iy1, ixv, ix0, ix1;
+        var idxD, idxS00, idxS10, idxS01, idxS11;
+        var dx, dy;
+        var r, g, b, a;
+        for (i = 0; i < destCanvasData.height; ++i) {
+            iyv = i / scale;
+            iy0 = Math.floor(iyv);
+            // Math.ceil can go over bounds
+            iy1 = (Math.ceil(iyv) > (srcCanvasData.height - 1) ? (srcCanvasData.height - 1) : Math.ceil(iyv));
+            for (j = 0; j < destCanvasData.width; ++j) {
+                ixv = j / scale;
+                ix0 = Math.floor(ixv);
+                // Math.ceil can go over bounds
+                ix1 = (Math.ceil(ixv) > (srcCanvasData.width - 1) ? (srcCanvasData.width - 1) : Math.ceil(ixv));
+                idxD = (j + destCanvasData.width * i) * 4;
+                // matrix to vector indices
+                idxS00 = (ix0 + srcCanvasData.width * iy0) * 4;
+                idxS10 = (ix1 + srcCanvasData.width * iy0) * 4;
+                idxS01 = (ix0 + srcCanvasData.width * iy1) * 4;
+                idxS11 = (ix1 + srcCanvasData.width * iy1) * 4;
+                // overall coordinates to unit square
+                dx = ixv - ix0;
+                dy = iyv - iy0;
+                // I let the r, g, b, a on purpose for debugging
+                r = inner(srcCanvasData.data[idxS00], srcCanvasData.data[idxS10], srcCanvasData.data[idxS01], srcCanvasData.data[idxS11], dx, dy);
+                destCanvasData.data[idxD] = r;
+
+                g = inner(srcCanvasData.data[idxS00 + 1], srcCanvasData.data[idxS10 + 1], srcCanvasData.data[idxS01 + 1], srcCanvasData.data[idxS11 + 1], dx, dy);
+                destCanvasData.data[idxD + 1] = g;
+
+                b = inner(srcCanvasData.data[idxS00 + 2], srcCanvasData.data[idxS10 + 2], srcCanvasData.data[idxS01 + 2], srcCanvasData.data[idxS11 + 2], dx, dy);
+                destCanvasData.data[idxD + 2] = b;
+
+                a = inner(srcCanvasData.data[idxS00 + 3], srcCanvasData.data[idxS10 + 3], srcCanvasData.data[idxS01 + 3], srcCanvasData.data[idxS11 + 3], dx, dy);
+                destCanvasData.data[idxD + 3] = a;
+            }
+        }
+    };
+
+    window[className] = window[className] || ImageResizer;
+}(jQuery));
+/////////////////// END: Image Resizer ///////////////////
+
 /////////////////// Ajax Upload Plugin ///////////////////
 (function (w, $) {
     var className = 'AjaxUpload';
 
     var defaults = {
         url: '/',
+        imageFileSizeLimit: 512 * 1024,
         type: 'POST',
         cache: false,
         contentType: false,
@@ -445,6 +580,43 @@
     };
 
     AjaxUpload.prototype.submit = function (url, data) {
+        var self = this;
+
+        var u = ('string' === typeof url) ? url : self.settings.url;
+        var d = ('object' === typeof url) ? url : data || {};
+
+        var dataLength = Object.getOwnPropertyNames(data).length,
+            sanitizedData = {},
+            didSanitize = function () {
+                if (Object.getOwnPropertyNames(sanitizedData).length === dataLength) {
+                    self._doSubmit(u, sanitizedData);
+                }
+            };
+
+        $.each(d, function (k, o) {
+            if (o instanceof File && o.size > self.settings.imageFileSizeLimit) {
+                var reader = new FileReader(),
+                    imgElement = $(new Image());
+
+                reader.onload = function (event) {
+                    imgElement.attr('src', event.target.result);
+                    var resized = new ImageResizer().scaleImage(imgElement.get(0));
+                    sanitizedData[k] = {
+                        file: resized,
+                        filename: 'img.jpeg'
+                    };
+                    didSanitize();
+                };
+                reader.readAsDataURL(o);
+            } else {
+                sanitizedData[k] = o;
+                didSanitize();
+            }
+        });
+        return self;
+    },
+
+    AjaxUpload.prototype._doSubmit = function (url, data) {
         var self = this;
 
         var u = ('string' === typeof url) ? url : self.settings.url;

@@ -20,6 +20,18 @@ pages = Blueprint('pages', __name__)
 def format_data_response(data):
     return data
 
+@pages.route('/indexxx/')
+def indexxx():
+    '''Test route'''
+    is_requesting_data = False
+    if request and request.args:
+        is_requesting_data = request.args.get('d', '0') == '1'
+
+    if is_requesting_data:
+        return format_data_response({'pagetype': 'homepage'})
+
+    return render_template('indexxx.html')
+
 @pages.route('/index/')
 def index():
     '''Test route'''
@@ -57,9 +69,20 @@ def logout():
 
     return render_template('index.html')
 
+@pages.route('/item/new/')
+def new_item():
+    '''Test route'''
+    is_requesting_data = False
+    if request and request.args:
+        is_requesting_data = request.args.get('d', '0') == '1'
 
-@pages.route('/upload/')
-def upload():
+    if is_requesting_data:
+        return format_data_response({'pagetype': 'uploadpage'})
+
+    return render_template('index.html')
+
+@pages.route('/uploadxxx/')
+def uploadxxx():
     '''Test route'''
     return render_template('upload.html')
 

@@ -329,9 +329,9 @@ function copyOwnPropertiesFrom(target, source) {
                 this['subscribers'].push(sbscrbr);
             },
 
-            notifiySubcribers: function () {
+            notifiySubcribers: function (newVal, oldVal) {
                 for (var i = 0, l = this['subscribers'].length; i < l; i++) {
-                    this['subscribers'][i]();
+                    this['subscribers'][i].call(this, newVal, oldVal);
                 }
             },
 
@@ -349,7 +349,7 @@ function copyOwnPropertiesFrom(target, source) {
             if (0 < arguments.length) {
                 var oldValue = bindover['currentValue'];
                 bindover['currentValue'] = arguments[0];
-                bindover['notifiySubcribers']();
+                bindover['notifiySubcribers'](bindover['currentValue'], oldValue);
                 return this;
             } else {
                 return bindover['currentValue'];
@@ -374,8 +374,9 @@ function copyOwnPropertiesFrom(target, source) {
         util.makeSubscribable(handler);
 
         handler['reevaluator'] = function () {
+            var oldVal = handler['currentValue'];
             handler['currentValue'] = evaluatorFunc.apply(tr);
-            handler['notifiySubcribers']();
+            handler['notifiySubcribers'](handler['currentValue'], oldVal);
         };
 
         /*
@@ -471,6 +472,18 @@ function copyOwnPropertiesFrom(target, source) {
             process: processor
         }
     }());
+
+    // TODO: Implement 2-way binding
+    // segueBinders.registerBinderForKey('data-sg-value', function () {
+    //     var processor = function (attr, elementNode, model, portal) {
+    //         var portalId = attr['value'].replace(/[\s]/g , '');
+    //         //portal[portalId] = elementNode;
+    //     };
+
+    //     return {
+    //         process: processor
+    //     }
+    // }());
 
     segueBinders.registerBinderForKey('data-sg-portal', function () {
         var processor = function (attr, elementNode, model, portal) {

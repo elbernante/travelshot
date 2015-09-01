@@ -323,7 +323,6 @@ var TSF = (function ($) {
             var funcCallback = util.functionify(callback);
 
             FB.login(function(response){
-                console.dir(response);
                 if (response.authResponse) {
                     console.log("Success FB login");
                     $.ajax({
@@ -577,7 +576,7 @@ var TSF = (function ($) {
                 if (pageObj.isLoginPage) {
                     self.hideButtons(true);
                 } else {
-                    self.hideUploadBtn(false)
+                    self.hideUploadBtn(pageObj.isUploadPage);
                     var user = TSF.currentUser();
                     if (!user) {
                         self.hideLoginBtn(false);
@@ -1047,6 +1046,83 @@ var TSF = (function ($) {
             }
         });
 
+        var UploadPanel = Segue.Class('UploadPanel', {
+            base: Segue.Element,
+            init: function () {
+                Segue.Element.call(this, {
+                    templateNode: $('#upload-panel-template').get(0),
+                    model: {}
+                });
+
+                return this;
+            },
+
+            html: function () {
+                if (this.cachedHtml) {
+                    return this.cachedHtml;
+                }
+
+                var html = Segue.Element.prototype.html.call(this);
+
+                var self = this;
+
+                // Get Item categories
+                TSF.getCategories(function (data) {
+                    if (!data['error'] && data instanceof Array) {
+                        var $catSel = $(self.portals['item_category']);
+                        $.each(data, function (i, o) {
+                            $catSel.append(new Option(o['name'], o['id']));
+                        });
+                    }
+                });
+
+                // initialize image drop widget
+                $(this.portals['image_drop']).imagedrop({
+                    maxFileSize: 8 * 1024 * 1024,
+                    onInvalidFile: function (element, file) {
+                        util.alert('Please select a valid photo. Accepted image files are JPEG, PNG, or GIF, and are less than 8 MB.', 'Inavlid Photo');
+                    },
+                    onChange: function(element, file) {
+                        console.log("Change: " + ((file) ? (file.name || 'No File Name') : 'None'));
+                    }
+                });
+
+                $(self.portals['btn_submit']).on('click', function (evt) {
+                    var newItem = {
+                        title: $(self.portals['item_title']).val(),
+                        category: $(self.portals['item_category']).val(),
+                        description: $(self.portals['item_desc']).val(),
+                        image: $(self.portals['image_drop']).imagedrop('file')
+                    };
+
+                    TSF.newItem(newItem);
+
+                });
+
+                return html;
+            },
+
+            dismiss: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                $html.stop().slideUp('slow', function () {
+                    $html.remove();
+                    self.uncacheHtlm();
+                });
+                return self;
+            },
+
+            load: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                self.container.append($html);
+                $html.stop().hide().slideDown('slow');
+                return self;
+            }
+        });
+
 
         var PageFactory = function () {
             var cachedPages = {};
@@ -1119,6 +1195,23 @@ var TSF = (function ($) {
                 return logoutPage;
             };
 
+            var createUploadPage = function () {
+                if (cachedPages['uploadpage']) {
+                    return cachedPages['uploadpage'];
+                }
+
+                var uploadP = new SPage('Upload Page');
+                uploadP.navbar = 'shrink';
+                uploadP.showCover = false;
+                uploadP.isUploadPage = true;
+                uploadP.requireLogin = true;
+
+                uploadP.addChildElement(new UploadPanel());
+
+                cachedPages['uploadpage'] = uploadP;
+                return uploadP;
+            };
+
             var pageLoaders = {
                 homepage: function (pageData) {
                     var homePage = new SPage('Home Page');
@@ -1152,6 +1245,10 @@ var TSF = (function ($) {
                     TSF.logout(function () {
                         Segue.loadPage(createLogoutPage(), '/pages/logout/')
                     });
+                },
+
+                uploadpage: function (pageData) {
+                    Segue.loadPage(createUploadPage(), '/pages/item/new/');
                 }
             };
 
@@ -1167,6 +1264,7 @@ var TSF = (function ($) {
                             var lp = createLoginPage();
                             lp.next = pageObj;
                             lp.nextUrl = d.location.pathname;
+                            console.log(lp.nextUrl);
                             Segue.loadPage(lp, '/pages/login/');
                             return;
                         }
@@ -1200,6 +1298,10 @@ var TSF = (function ($) {
 
                 loadLogoutPage: function () {
                     pageLoaders['logoutpage']();
+                },
+
+                loadUploadPage: function () {
+                    pageLoaders['uploadpage']();
                 }
             };
         }();
@@ -1216,6 +1318,10 @@ var TSF = (function ($) {
         navBar.setActionFor('logout', function () {
            PageFactory.loadLogoutPage();
         })
+
+        navBar.setActionFor('upload', function () {
+            PageFactory.loadUploadPage();
+        });
 
         // Get Current user
         TSF.getSignedInUser(function (user) {

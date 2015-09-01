@@ -50,10 +50,10 @@
                         <li data-sg-portal="user_button" class="dropdown hidden">
                           <a href="javascript:void(0);" class="dropdown-toggle btn-user nav-a-btn-hidden" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
                             {$ name $}
+                            <span class="caret"></span>
                             <div class="user-img">
                               <img class="img-circle" data-sg-attr-bind="src: photo" />
                             </div>
-                            <span class="caret"></span>
                           </a>
                           <ul class="dropdown-menu">
                             <li><a href="javascript:void(0);">My Sh&lsqb;&xodot;&rsqb;s</a></li>
@@ -171,14 +171,47 @@
           </div>
         </template>
 
-        <template  id="grid-item-templateXXX">
-          <div class="grid-item" style="background-color: {$ background $}; color: {$ color $}; min-height: 100px">
-              First name: {$ user.firstName $} <br />
-              Last name: {$ user.lastName $} <br/>
-              <br />
-              <div>
-              Hello <strong>{$ user.fullName $}</strong>!
-              <img data-sg-attr-bind="src: item.image_url" />
+        <template id="upload-panel-template">
+          <div class="image-drop-container">
+            <div data-sg-portal="image_drop" class="imagedropzone">
+            </div>
+            <div class="image-drop-overlay">
+              <div class="image-drop-msg">
+                Drop photo here<br>
+                or<br>
+                Click to select
+              </div>
+            </div>
+          </div>
+          <div class="progress itm-upl-progress">
+            <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 60%;">
+              <span class="sr-only">60% Complete</span>
+            </div>
+          </div>
+          <div class="row item-user-inputs">
+            <div class="col-xs-12 col-sm-9">
+              <div class="form-group">
+                <label for="item-title" class="sr-only">Title</label>
+                <input data-sg-portal="item_title" type="text" class="form-control input-lg" id="item-title" placeholder="Title">
+              </div>
+              <div class="form-group">
+                <label for="item-category" class="sr-only">Title</label>
+                <select data-sg-portal="item_category" class="form-control" id="item-category">
+                    <option value="" disabled selected>Category</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="item-desc" class="sr-only">Description</label>
+                <textarea data-sg-portal="item_desc" class="form-control" rows="3" id="item-desc" placeholder="Description"></textarea>
+              </div>
+            </div>
+            <div class="col-xs-12 col-sm-3">
+                <button data-sg-portal="btn_submit" type="button" class="btn btn-primary btn-lg btn-block">
+                  Save 
+                  <span class="glyphicon glyphicon-cloud-upload" aria-hidden="true"></span>
+                </button>
+                <hr>
+                <button type="button" class="btn btn-default btn-block">Cancel</button>
             </div>
           </div>
         </template>

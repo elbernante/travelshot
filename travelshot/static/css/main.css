@@ -670,6 +670,140 @@ textarea {
 
 /************************ END: Login Panel ************************/
 
+/************************ Upload Panel ************************/
+.image-drop-container {
+    position: relative;
+    width: 100%;
+    height: 50vh;
+}
+
+.image-drop-container .image-drop-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.image-drop-overlay .image-drop-msg {
+    display: inline-block;
+
+    position: relative;
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    color: #FF5208;
+    font-size: 20px;
+    font-weight: bold;
+    background-color: #FFF;
+    padding: 20px;
+    border-style: dashed;
+    border-width: 5px;
+    border-radius: 5px;
+    -webkit-transform: translate(-50%, -50%);
+       -moz-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+}
+
+.image-drop-container:hover .image-drop-overlay {
+    opacity: 0.8;
+}
+
+.image-drop-container .imagedropzone {
+    position: absolute;
+    cursor: pointer;
+    border-radius: 5px;
+    background-color: #FFD3C1;
+    width: 100%;
+    height: 100%;
+}
+
+.item-user-inputs {
+   
+}
+
+.item-user-inputs input {
+    color: #FF5208;
+}
+
+.itm-upl-progress {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 2px;
+    height: 4px;
+}
+
+.itm-upl-progress .progress-bar {
+    background-color: #FF5208;
+}
+
+/************************ END: Upload Panel ************************/
+
+.btn-primary {
+    background-color: #FF5208;
+    border-color: #AE3400;
+}
+
+.btn-primary:focus,
+.btn-primary.focus {
+  color: #fff;
+  background-color: #AE3400;
+  border-color: #AE3400;
+}
+
+.btn-primary:hover {
+  color: #fff;
+  background-color: #FF8B5A;
+  border-color: #AE3400;
+}
+
+.btn-primary:active,
+.btn-primary.active,
+.open > .dropdown-toggle.btn-primary {
+  color: #fff;
+  background-color: #AE3400;
+  border-color: #AE3400;
+}
+
+.btn-primary:active:hover,
+.btn-primary.active:hover,
+.open > .dropdown-toggle.btn-primary:hover,
+.btn-primary:active:focus,
+.btn-primary.active:focus,
+.open > .dropdown-toggle.btn-primary:focus,
+.btn-primary:active.focus,
+.btn-primary.active.focus,
+.open > .dropdown-toggle.btn-primary.focus {
+  color: #fff;
+  background-color: #AE3400;
+  border-color: #AE3400;
+}
+
+.btn-primary:active,
+.btn-primary.active,
+.open > .dropdown-toggle.btn-primary {
+  background-image: none;
+}
+
+.btn-primary.disabled:hover,
+.btn-primary[disabled]:hover,
+fieldset[disabled] .btn-primary:hover,
+.btn-primary.disabled:focus,
+.btn-primary[disabled]:focus,
+fieldset[disabled] .btn-primary:focus,
+.btn-primary.disabled.focus,
+.btn-primary[disabled].focus,
+fieldset[disabled] .btn-primary.focus {
+  background-color: #FFD3C1;
+  border-color: #FF8B5A;
+}
+
+.btn-primary .badge {
+  color: #337ab7;
+  background-color: #fff;
+}
+
+
 .page-footer {
     font-family: 'Roboto', sans-serif, arial;
 }
