@@ -1116,8 +1116,7 @@ var TSF = (function ($) {
                             self._setProgress(percent);
                         },
                         success: function(data, textStatus, jqXHR) {
-                            console.log('Upload complete! :D')
-                            console.dir(data);
+                            PageFactory.loadViewItemPage(data);
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
                             util.alert('An error occurred while trying to save the photo. Please try again later.');
@@ -1377,22 +1376,31 @@ var TSF = (function ($) {
                 homepage: function (pageData) {
                     var homePage = new SPage('Home Page');
                     homePage.showCover = true;
-                    // var latestPanel = new Panel({
-                    //     id: 'latest',
-                    //     name: 'Latest Shots'
-                    // });
-                    // homePage.addChildElement(latestPanel);
+
+                    var _getItems = function (panelObj, id) {
+                        TSF.getItemsForCat(id, function (data) {
+                            if (!data['error'] && data instanceof Array) {
+                                $.each(data, function (itemI, itemO) {
+                                    panelObj.newItemArrived(new ItemEntry(itemO));
+                                });
+                            }
+                        });
+                    };
+
+                    var latestPanel = {
+                        id: 'latest',
+                        name: 'Latest Shots'
+                    };
+                    
+                    var pnlObj = new Panel(latestPanel);
+                    homePage.addChildElement(pnlObj);
+                    _getItems(pnlObj, latestPanel.id);
+
                     TSF.getCategories(function (categories) {
                         $.each(categories, function (i, o) {
                             var panelObj = new Panel(o);
                             homePage.addChildElement(panelObj);
-                            TSF.getItemsForCat(o['id'], function (data) {
-                                if (!data['error'] && data instanceof Array) {
-                                    $.each(data, function (itemI, itemO) {
-                                        panelObj.newItemArrived(new ItemEntry(itemO));
-                                    });
-                                }
-                            });
+                            _getItems(panelObj, o['id']);
                         });
                         Segue.loadPage(homePage, '/');
                     });

@@ -421,6 +421,13 @@ textarea {
     width: 33.33%;
 }
 
+@media (min-width: 992px) {
+    .grid-sizer,
+    .grid-item {
+        width: 25%;
+    }
+}
+
 .grid-item {
     float: left;
 }
