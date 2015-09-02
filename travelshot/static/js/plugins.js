@@ -377,7 +377,7 @@
     var className = 'ImageResizer';
     
     var defaults = {
-        maxWidth: 600,
+        maxWidth: 800,
         quality: 0.9
     };
 
@@ -512,7 +512,7 @@
 
     var defaults = {
         url: '/',
-        imageFileSizeLimit: 512 * 1024,
+        resizeImageOnSize: 0,
         type: 'POST',
         cache: false,
         contentType: false,
@@ -585,16 +585,35 @@
         var u = ('string' === typeof url) ? url : self.settings.url;
         var d = ('object' === typeof url) ? url : data || {};
 
+        // Resize image files if needed
+        self._sanitzeData(d, function (sanitized) {
+            self._doSubmit(u, sanitized);
+        });
+
+        return self;
+    },
+
+    AjaxUpload.prototype._sanitzeData = function (data, callback) {
+        var self = this;
+
         var dataLength = Object.getOwnPropertyNames(data).length,
             sanitizedData = {},
+            isImageFile = function (fileObj) {
+                return fileObj.type.match(/^image\//, 'i');
+            },
+            needsResize = function (fileObj) {
+                return (self.settings.resizeImageOnSize !== 0 
+                        && fileObj.size > self.settings.resizeImageOnSize) ?
+                            true : false;
+            },
             didSanitize = function () {
                 if (Object.getOwnPropertyNames(sanitizedData).length === dataLength) {
-                    self._doSubmit(u, sanitizedData);
+                    callback.call(self, sanitizedData);
                 }
             };
 
-        $.each(d, function (k, o) {
-            if (o instanceof File && o.size > self.settings.imageFileSizeLimit) {
+        $.each(data, function (k, o) {
+            if (o instanceof File && isImageFile(o) && needsResize(o)) {
                 var reader = new FileReader(),
                     imgElement = $(new Image());
 
@@ -613,7 +632,6 @@
                 didSanitize();
             }
         });
-        return self;
     },
 
     AjaxUpload.prototype._doSubmit = function (url, data) {
@@ -670,8 +688,6 @@
                 util.fireEvent.call(self, 'complete', jqXHR, textStatus);
             }
         });
-
-        return self;
     };
 
     w[className] = w[className] || AjaxUpload;

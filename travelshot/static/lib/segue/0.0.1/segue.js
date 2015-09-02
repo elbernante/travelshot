@@ -397,6 +397,22 @@ function copyOwnPropertiesFrom(target, source) {
     };
     registerName('computed', computed);
 
+    var makeObjectBindable = function (obj) {
+        var newObj = {},
+            keys = Object.getOwnPropertyNames(obj);
+
+        for (var i = 0, l = keys.length; i < l; i++) {
+            var k = keys[i], v = obj[k];
+            if ('object' === typeof v) {
+                newObj[k] = makeObjectBindable(v);
+            } else {
+                newObj[k] = bindable(v);
+            }
+        }
+        return newObj;
+    };
+    registerName('makeObjectBindable', makeObjectBindable);
+
     // Text Node and Element Attribute binder
     var bindTextNodeOrAttr = function (placeHolders, textNodeOrAttr, model, portal) {
 

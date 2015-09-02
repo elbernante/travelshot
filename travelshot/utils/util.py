@@ -10,6 +10,7 @@ from functools import wraps
 
 from flask import request
 from flask import make_response
+from flask import render_template
 from flask import session as login_session
 from flask import current_app as app
 
@@ -118,6 +119,22 @@ def require_login(func):
         return func(*args, **kwargs)
     return wrapper
 
+@format_response
+def format_data_response(data):
+    return data
+
+def smart_request(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        is_requesting_data = False
+        if request and request.args:
+            is_requesting_data = request.args.get('d', '0') == '1'
+
+        if is_requesting_data:
+            return format_data_response(func(*args, **kwargs))
+
+        return render_template('index.html')
+    return wrapper
 
 def random_key():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))

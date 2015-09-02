@@ -16,10 +16,12 @@ from ..utils.datastore import get_item_with_id_salt_type_or_404
 
 pages = Blueprint('pages', __name__)
 
+# TODO: Remove this function
 @util.format_response
 def format_data_response(data):
     return data
 
+# TODO: Remove this function
 @pages.route('/indexxx/')
 def indexxx():
     '''Test route'''
@@ -32,62 +34,44 @@ def indexxx():
 
     return render_template('indexxx.html')
 
-@pages.route('/index/')
+@pages.route('/index/', methods=['GET'])
+@util.smart_request
 def index():
     '''Test route'''
-    is_requesting_data = False
-    if request and request.args:
-        is_requesting_data = request.args.get('d', '0') == '1'
-
-    if is_requesting_data:
-        return format_data_response({'pagetype': 'homepage'})
-
-    return render_template('index.html')
+    return {'pagetype': 'homepage'}
 
 
-@pages.route('/login/')
+@pages.route('/login/', methods=['GET'])
+@util.smart_request
 def login():
     '''Test route'''
-    is_requesting_data = False
-    if request and request.args:
-        is_requesting_data = request.args.get('d', '0') == '1'
+    return {'pagetype': 'loginpage'}
 
-    if is_requesting_data:
-        return format_data_response({'pagetype': 'loginpage'})
-
-    return render_template('index.html')
-
-@pages.route('/logout/')
+@pages.route('/logout/', methods=['GET'])
+@util.smart_request
 def logout():
     '''Test route'''
-    is_requesting_data = False
-    if request and request.args:
-        is_requesting_data = request.args.get('d', '0') == '1'
+    return {'pagetype': 'logoutpage'}
 
-    if is_requesting_data:
-        return format_data_response({'pagetype': 'logoutpage'})
-
-    return render_template('index.html')
-
-@pages.route('/item/new/')
+@pages.route('/item/new/', methods=['GET'])
+@util.smart_request
 def new_item():
     '''Test route'''
-    is_requesting_data = False
-    if request and request.args:
-        is_requesting_data = request.args.get('d', '0') == '1'
+    return {'pagetype': 'uploadpage'}
 
-    if is_requesting_data:
-        return format_data_response({'pagetype': 'uploadpage'})
+@pages.route('/item/<int:item_id>/', methods=['GET'])
+@util.smart_request
+def view_item(item_id):
+    '''Test route'''
+    return {'pagetype': 'viewitem', 'id': item_id}
 
-    return render_template('index.html')
-
+# TODO: Remove this function
 @pages.route('/uploadxxx/')
 def uploadxxx():
     '''Test route'''
     return render_template('upload.html')
 
-
-@pages.route('/image/<key>/<filename>')
+@pages.route('/image/<key>/<filename>', methods=['GET'])
 def view_mage(key, filename):
     id = ''
     ext = ''

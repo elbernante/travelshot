@@ -52,9 +52,12 @@ def nilatch():
 @util.csrf_protect_enable
 @util.format_response
 def get_current_user():
+    if login_session.get('user_id', None) is None:
+        return 'false'
+
     current_user = ds.get_user_by_id(login_session['user_id'])
     if current_user is None:
-        return 'None'
+        return 'false'
     return current_user.serialize
 
 
@@ -205,8 +208,7 @@ def gconnect():
     stored_credentials = login_session.get('credentials')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_credentials is not None and gplus_id == stored_gplus_id:
-        # TODO: Return user object
-        # return {'success': 'User is already logged in.'}
+        # User is already logged in
         return _get_current_user().serialize
 
     # Get user info
@@ -230,7 +232,7 @@ def gconnect():
     return user.serialize
 
 def _clean_up_session():
-    # remove store login session data
+    # Remove store login session data
     login_session['user_id'] = None
 
     login_session['credentials'] = None     # G+ Specific
@@ -329,8 +331,7 @@ def fbconnect():
     stored_access_token = login_session.get('access_token')
     stored_fb_id = login_session.get('facebook_id')
     if stored_access_token is not None and user_info['id'] == stored_fb_id:
-        # TODO: Return user object
-        # return {'success': 'User is already logged in.'}
+        # User is already logged in
         return _get_current_user().serialize
 
     # Dump user info to session

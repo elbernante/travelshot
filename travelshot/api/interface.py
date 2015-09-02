@@ -13,6 +13,7 @@ from flask import current_app as app
 
 from werkzeug.exceptions import BadRequest
 from werkzeug.exceptions import Unauthorized
+from werkzeug.exceptions import NotFound
 
 from ..utils import util
 from ..utils import datastore as ds
@@ -124,8 +125,15 @@ def upload_new_item():
     # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
     return serialize_item_object(item)
 
+@api.route('/item/<int:item_id>/', methods=['GET'])
+@util.format_response
+def get_item(item_id):
+    item = ds.get_item_by_id(item_id)
+    if item is None:
+        raise NotFound('Item not found')
+    return serialize_item_object(item)
 
-@api.route('/item/edit/<item_id>/', methods=['POST'])
+@api.route('/item/<int:item_id>/edit/', methods=['POST'])
 @util.csrf_protect_enable
 @util.require_login
 @util.format_response

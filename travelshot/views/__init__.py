@@ -18,18 +18,10 @@ def format_data_response(data):
 @app.route('/')
 @app.route('/index/')
 @app.route('/index.html')
+@util.smart_request
 def index():
     '''Test route'''
-    # return redirect(url_for('pages.index'))
-
-    is_requesting_data = False
-    if request and request.args:
-        is_requesting_data = request.args.get('d', '0') == '1'
-
-    if is_requesting_data:
-        return format_data_response({'pagetype': 'homepage'})
-
-    return render_template('index.html')
+    return {'pagetype': 'homepage'}
 
 @app.route('/favicon.ico')
 def favicon():
