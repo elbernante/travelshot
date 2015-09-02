@@ -1330,16 +1330,9 @@ var TSF = (function ($) {
 
                 var bindableItem = Segue.makeObjectBindable({
                     author_id: 0,
-                    author: {
-                        id: 0,
-                        name: '',
-                        picture: '',
-                    },
+                    author: {id: 0, name: '', picture: ''},
                     category_id: 1,
-                    category: {
-                        id: 0,
-                        name: ''
-                    },
+                    category: {id: 0, name: ''},
                     id: 0,
                     date_created: '',
                     description: '',
