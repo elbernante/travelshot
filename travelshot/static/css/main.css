@@ -776,7 +776,13 @@ textarea {
     overflow: auto;
 }
 
+.itm-v-detail .itm-v-btns {
+    text-align: right;
+    margin-bottom: 10px;
+}
+
 .itm-v-detail .media {
+    margin-top: 0px;
     padding-bottom: 10px;
 }
 

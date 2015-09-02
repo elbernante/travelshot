@@ -1348,16 +1348,16 @@ var TSF = (function ($) {
                     title: ''
                 });
 
-                var dateFormatOptions = {year: 'numeric', month: 'long', day: 'numeric' };
                 var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                // getDate()
-                // getMonth()
-                // getFullYear()
                 bindableItem['displayDate'] = Segue.computed(function () {
                     var d = new Date(bindableItem.date_created());
                     return months[d.getMonth()] + ' ' + d.getDate() + ', ' +  d.getFullYear();
-                    //return d.toLocaleDateString('en-US', dateFormatOptions);
                 }, bindableItem).subscribeTo(bindableItem.date_created);
+
+                bindableItem['readOnly'] = Segue.computed(function () {
+                    var currentUser = TSF.currentUser();
+                    return  !currentUser || (currentUser.id !== bindableItem.author.id());
+                }, bindableItem).subscribeTo(bindableItem.author.id);
 
                 var updateValues = function (bindableDist, srcObj) {
                     $.each(bindableDist, function (k, v) {

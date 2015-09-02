@@ -255,7 +255,8 @@ function copyOwnPropertiesFrom(target, source) {
             toRegEx = function (str, flag) { return new RegExp(regExEscape(str), flag); };
 
         var varTag = ['{$', '$}'],
-            binderPlaceHolder = new RegExp(regExEscape(varTag[0]) + '.*?' + regExEscape(varTag[1]) , 'g');
+            binderPlaceHolder = new RegExp(regExEscape(varTag[0]) + '.*?' + regExEscape(varTag[1]) , 'g'),
+            tagStripper = new RegExp(['^' + regExEscape(varTag[0]), regExEscape(varTag[1]) + '$'].join('|') , 'g');
 
         return {
             toRegEx: toRegEx,
@@ -273,8 +274,8 @@ function copyOwnPropertiesFrom(target, source) {
             },
 
             resolveProp: function (prop, model) {
-                // strip off place holder token
-                var strippedProp = prop.replace(/[{}$\s]/g, ''),
+                // strip off place holder tags
+                var strippedProp = prop.replace(/[\s]/g, '').replace(tagStripper, '');
                     propChain = strippedProp.split('.'),
                     ref = model;
 
@@ -284,8 +285,7 @@ function copyOwnPropertiesFrom(target, source) {
                         throw 'No property name specified.';
                     }
                     ref = ref[p];
-                }
-                    
+                }   
                 return ref;
             },
 
@@ -477,10 +477,45 @@ function copyOwnPropertiesFrom(target, source) {
                     var t_attr =  attrArr[i].split(':'),
                         n_att = d.createAttribute(t_attr[0]);
 
-                    n_att.value = util.wrapWithPlaceHolders(t_attr[1]);
+                    n_att.value = t_attr[1];
                     bindTextNodeOrAttr([n_att.value], n_att, model, portal);
                     elementNode.setAttributeNode(n_att);
                 }
+            }
+        };
+
+        return {
+            process: processor
+        }
+    }());
+
+    segueBinders.registerBinderForKey('data-sg-hide', function () {
+        var processor = function (attr, elementNode, model, portal) {
+            var resolvedProp = util.resolveProp(attr['value'], model);
+
+            var valueUpdater = function (newVal, oldVal) {
+                var styleAttr = elementNode.attributes.getNamedItem('style') || d.createAttribute('style'),
+                    styleVal = (styleAttr.value || ''),
+                    hasDisplay = false,
+                    displayCss = (newVal) ? 'display: none !important;' : 'display: block;';
+
+                styleVal.replace(/(?:;|\s*|^)(display\s*\:.*?(?:$|;))/, function (m, p1, o, str) {
+                    hasDisplay = true;
+                    return m.replace(p1, displayCss);
+                });
+
+                styleAttr.value = (hasDisplay) ? styleVal : displayCss + ((styleVal.length <= 0) ? '' : ' ' + styleVal);
+                elementNode.setAttributeNode(styleAttr);
+            };
+
+            if (util.isSubscribable(resolvedProp)) {
+                resolvedProp.subscribe(valueUpdater);
+                portal['_subcriptions'].push({model: resolvedProp, subscriber: valueUpdater});
+                valueUpdater(resolvedProp());
+            } else if ('function' === typeof resolvedProp) {
+                valueUpdater(resolvedProp());
+            } else {
+                valueUpdater(resolvedProp);
             }
         };
 
@@ -680,7 +715,6 @@ function copyOwnPropertiesFrom(target, source) {
         },
 
         dismiss: function () {
-            console.log('dismmising page: ' + this.title);
             var bod = this.pageBody || d.getElementById('body-content') || d.getElementsByTagName('body')[0];
             var lc = bod.lastChild;
             while (lc) {
@@ -690,7 +724,6 @@ function copyOwnPropertiesFrom(target, source) {
         },
 
         load: function () {
-            console.log('Loading page: ' + this.title);
             var bod = this.pageBody || d.getElementById('body-content') || d.getElementsByTagName('body')[0];
             this.appendElementsToNode(this.elements, bod);
         }
