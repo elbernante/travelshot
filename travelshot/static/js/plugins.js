@@ -323,9 +323,19 @@
         }
     };
 
+    ImageDrop.prototype.displayImageUrl = function (url) {
+        var self = this;
+        if (url) {
+            self.imageView.attr('src', url);
+            return self;
+        } else {
+            return self.imageView.attr('src');
+        }
+    };
+
     var _actions = {
         markUp: function (options) {
-            return this.each(function(index, obj){
+            return this.each(function (index, obj) {
                 if (!$.data(this, pluginName)) {
                     $.data(this, pluginName, new ImageDrop(this, options));
                 }
@@ -337,7 +347,7 @@
                 var o = this.data(pluginName);
                 return ( o ? o.file : undefined );
             } else {
-                return this.each(function(index, obj){
+                return this.each(function (index, obj) {
                     var o = $.data(this, pluginName);
                     if (o) { o.setFile(aFile); }
                 });
@@ -345,10 +355,22 @@
         },
 
         clearFile: function() {
-            return this.each(function(index, obj){
+            return this.each(function (index, obj) {
                 var o = $.data(this, pluginName);
                 if (o) { o.clearFile(); }
             });
+        },
+
+        displayImageUrl: function (url) {
+            if (url) {
+                return this.each(function (index, obj) {
+                    var o = $.data(this, pluginName);
+                    if (o) { o.displayImageUrl(url); }
+                });
+            } else {
+                var o = this.data(pluginName);
+                return ( o ? o.displayImageUrl() : undefined );
+            }
         }
     };
 
