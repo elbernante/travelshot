@@ -42,10 +42,10 @@
                 <div class="collapse navbar-collapse" id="ts-navbar-collapse">
                     <ul class="nav navbar-nav navbar-right" data-sg-portal="login_group">
                         <li data-sg-portal="upload_button" class="hidden">
-                          <a href="javascript:void(0);" class="nav-a-btn btn-upload nav-a-btn-hidden">Share a Sh[&ofcir;]t</a>
+                          <a href="{{ url_for('pages.new_item') }}" class="nav-a-btn btn-upload nav-a-btn-hidden">Share a Sh[&ofcir;]t</a>
                         </li>
                         <li data-sg-portal="login_button" class="hidden">
-                          <a href="javascript:void(0);" class="nav-a-btn btn-signin nav-a-btn-hidden">Sign in</a>
+                          <a href="{{ url_for('pages.login') }}" class="nav-a-btn btn-signin nav-a-btn-hidden">Sign in</a>
                         </li>
                         <li data-sg-portal="user_button" class="dropdown hidden">
                           <a href="javascript:void(0);" class="dropdown-toggle btn-user nav-a-btn-hidden" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
@@ -58,7 +58,7 @@
                           <ul class="dropdown-menu">
                             <li><a href="javascript:void(0);">My Sh&lsqb;&xodot;&rsqb;s</a></li>
                             <li role="separator" class="divider"></li>
-                            <li data-sg-portal="logout_button"><a href="javascript:void(0);">Sign out</a></li>
+                            <li data-sg-portal="logout_button"><a href="{{ url_for('pages.logout') }}">Sign out</a></li>
                           </ul>
                         </li>
                     </ul>
@@ -111,6 +111,10 @@
             </div><!-- /.modal-content -->
           </div><!-- /.modal-dialog -->
         </div><!-- /.modal -->
+
+        <div class="flash-message" id="flash-message">
+          Message Goes Here
+        </div>
         
         <template id="panel-template">
             <div class="panel panel-default">
@@ -127,19 +131,21 @@
 
         <template id="grid-item-template">
           <div class="grid-item">
-            <div class="overlay">
-                <div class="overlay-dimmer">
-                    <div class="item-author">
-                        <span><small>by:</small> {$ author.name $}</span>
-                        <div class="item-author-img">
-                             <img class="img-circle" data-sg-attr-bind="src: author.picture" />
-                        </div>
-                    </div>
+            <a href="{$ page_url $}">
+              <div class="overlay">
+                  <div class="overlay-dimmer">
+                      <div class="item-author">
+                          <span><small>by:</small> {$ author.name $}</span>
+                          <div class="item-author-img">
+                               <img class="img-circle" data-sg-attr-bind="src: author.picture" />
+                          </div>
+                      </div>
 
-                    <div class="item-title">{$ title $}</div>
-                </div>
-            </div>
-            <img data-sg-attr-bind="src: image_url" data-sg-portal="item_image" />
+                      <div class="item-title">{$ title $}</div>
+                  </div>
+              </div>
+              <img data-sg-attr-bind="src: image_url" data-sg-portal="item_image" />
+            </a>
           </div>
         </template>
         
@@ -210,8 +216,10 @@
                   <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
                   Save 
                 </button>
-                <hr>
-                <button type="button" class="btn btn-default btn-block">Cancel</button>
+                <div data-sg-hide="isNewItem">
+                  <button data-sg-portal="btn_cancel" type="button" class="btn btn-default btn-block">Cancel</button>
+                  <button data-sg-portal="btn_delete" type="button" class="btn btn-default btn-block">Delete</button>
+                </div>
             </div>
           </div>
         </template>
@@ -223,8 +231,8 @@
             </div>
             <div class="col-xs-12 col-sm-3 itm-v-detail">
               <div class="itm-v-btns" data-sg-hide="readOnly">
-                <button type="button" class="btn btn-default"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit </button>
-                <button type="button" class="btn btn-default"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete </button>
+                <a data-sg-portal="edit_button" href="{$ editUrl $}" role="button" type="button" class="btn btn-default"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit </a>
+                <a data-sg-portal="delete_button" href="{$ deleteUrl $}" role="button" type="button" class="btn btn-default"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete </a>
               </div>
               <div class="media">
                 <div class="media-left media-top">
@@ -246,6 +254,27 @@
           </div>
         </template>
 
+        <template id="item-delete-panel-template">
+          <div class="view-port-max delete-panel">
+              <div class="view-port-center shadowed-box">
+                <div class="row">
+                  <div class="col-xs-3">
+                    <img data-sg-attr-bind="src: image_url">
+                  </div>
+                  <div class="col-xs-9">
+                    <h4 class="media-heading">Are you <big>sure</big> you want to <big>delete</big> this shot?</h4>
+                    <h5>{$ title $} <small>{$ displayDate $}</small></h5>
+                    <p>{$ description $}</p>
+                    <div>
+                      <button data-sg-portal="btn_cancel" type="button" class="btn btn-default">Cancel</button>
+                      <button data-sg-portal="btn_delete" type="button" class="btn btn-primary">Confirm Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          </div>
+        </template>
+
          <!-- Scripts -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="{{ url_for('static', filename='lib/jquery/2.1.4/jquery.min.js') }}"><\/script>')</script>
@@ -254,9 +283,6 @@
         <script src="{{ url_for('static', filename='lib/segue/0.0.1/segue.js') }}"></script>
         <script src="{{ url_for('static', filename='js/plugins.js') }}"></script>
         <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-
-
-        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <script>
           (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
           (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),

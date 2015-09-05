@@ -20,12 +20,13 @@ var TSF = (function ($) {
                 _utils.functionify(callback)(data);
             },
 
-            simpleGet: function (url, callback) {
+            simpleGet: function (url, callback, includeCsrf) {
                 var funcCallback = _utils.functionify(callback);
 
                 $.ajax({
                     type: 'GET',
                     url: url,
+                    headers: (includeCsrf) ? {'X-CSRFToken': APP_GLOBALS.get('csrfToken')} : {},
                     dataType: 'json',
                     success: function(data, textStatus, jqXHR) {
                         funcCallback(data);
@@ -424,8 +425,32 @@ var TSF = (function ($) {
             ajaxUpload.submit('/api/item/new/', $.extend({}, itemObj));
         },
 
+        editItem: function (itemObj, callbacks) {
+            var ajaxUpload = new AjaxUpload($.extend({
+                resizeImageOnSize: 256 * 1024,
+                headers: {'X-CSRFToken': APP_GLOBALS.get('csrfToken')}
+            }, callbacks));
+
+            ajaxUpload.submit('/api/item/' + itemObj.item_id + '/edit/', $.extend({}, itemObj));
+        },
+
         getItem: function (id, callback) {
             util.simpleGet('/api/item/' + id + '/', callback);
+        },
+
+        requestDeleteItem: function (id, callback) {
+            util.simpleGet('/api/item/' + id + '/delete/', callback, true);
+        },
+
+        deleteItem: function (id, nonceToken, callbacks) {
+            var ajaxUpload = new AjaxUpload($.extend({
+                headers: {'X-CSRFToken': APP_GLOBALS.get('csrfToken')},
+                contentType: 'application/json'
+            }, callbacks));
+
+            ajaxUpload.submit('/api/item/' + id + '/delete/', {
+                nonce_token: nonceToken
+            });
         }
     }
 }(jQuery));
@@ -445,6 +470,67 @@ var TSF = (function ($) {
                     $alertBox.find('.modal-title').text(title || 'Travel Shot');
                     $alertBox.find('.modal-body p').text(message);
                     $alertBox.modal('show');
+                },
+
+                flashMessage: function (message, type) {
+                    var msgBox = $('#flash-message'),
+                        duration = ('error' === type) ? 6000: 3000;
+                    if ('error' === type) {
+                        msgBox.addClass('flash-msg-error');
+                    } else {
+                        msgBox.removeClass('flash-msg-error');
+                    }
+                    msgBox.text(message).stop(true, true).show().fadeOut(duration);
+                },
+
+                createBindableItemObj: function () {
+                    var bindableItem = Segue.makeObjectBindable({
+                        author_id: 0,
+                        author: {id: 0, name: '', picture: ''},
+                        category_id: 0,
+                        category: {id: 0, name: ''},
+                        id: 0,
+                        date_created: '',
+                        description: '',
+                        image_url: '',
+                        last_modified: '',
+                        title: ''
+                    });
+
+                    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    bindableItem['displayDate'] = Segue.computed(function () {
+                        var d = new Date(bindableItem.date_created());
+                        return months[d.getMonth()] + ' ' + d.getDate() + ', ' +  d.getFullYear();
+                    }, bindableItem).subscribeTo(bindableItem.date_created);
+
+                    bindableItem['readOnly'] = Segue.computed(function () {
+                        var currentUser = TSF.currentUser();
+                        return  !currentUser || (currentUser.id !== bindableItem.author.id());
+                    }, bindableItem).subscribeTo(bindableItem.author.id);
+
+                    bindableItem['editUrl'] = Segue.computed(function () {
+                        return '/pages/item/' + bindableItem.id() + '/edit/';
+                    }, bindableItem).subscribeTo(bindableItem.id);
+
+                    bindableItem['deleteUrl'] = Segue.computed(function () {
+                        return '/pages/item/' + bindableItem.id() + '/delete/';
+                    }, bindableItem).subscribeTo(bindableItem.id);
+
+                    return bindableItem;
+                },
+
+                updateBindableValues: function (bindableDist, srcObj) {
+                    $.each(bindableDist, function (k, v) {
+                        if ('object' === typeof v) {
+                            util.updateBindableValues(v, srcObj[k]);
+                        } else if ('function' === typeof v) {
+                            v(srcObj[k]);
+                        } else {
+                            bindableDist[k] = srcObj[k];
+                        }
+                    });
+
+                    return bindableDist;
                 }
             };
         }();
@@ -480,7 +566,8 @@ var TSF = (function ($) {
                 var setBtnAct = function (btn, key) {
                     $(btn).find('>a:first-child').on('click', function (event) {
                         if ('function' === typeof self.clickActions[key]) {
-                            self.clickActions[key]();
+                            event.preventDefault();
+                            self.clickActions[key](event);
                         }
                     });
                 };
@@ -818,7 +905,7 @@ var TSF = (function ($) {
 
                 $html.stop().hide('slow', function () {
                     $html.remove();
-                    self.uncacheHtlm();
+                    self.uncacheHtml();
                     self._isRendering = false;
                     self._isRendered = false;
                 });
@@ -866,16 +953,32 @@ var TSF = (function ($) {
             init: function (itemObj) {
                 Segue.Element.call(this, {
                     templateNode: $('#grid-item-template').get(0),
-                    model: itemObj
+                    model: $.extend({}, itemObj, {'page_url': '/pages/item/' + itemObj.id + '/'})
                 });
                 return this;
+            },
+
+            html: function () {
+                if (this.cachedHtml) {
+                    return this.cachedHtml;
+                }
+
+                var html = Segue.Element.prototype.html.call(this),
+                    self = this;
+
+                $(html).find('> a').on('click', function (evt) {
+                    evt.preventDefault();
+                    PageFactory.loadViewItemPage(self.options.model);
+                });
+
+                return html;
             },
 
             dismiss: function () {
                 var self = this;
                 if (self.isotopeGrid) {
                     self.isotopeGrid.isotope('remove', $(self.html()));
-                    self.uncacheHtlm();
+                    self.uncacheHtml();
                 }
                 return self;
             },
@@ -918,7 +1021,7 @@ var TSF = (function ($) {
 
                 $html.stop().slideUp('slow', function () {
                     $html.remove();
-                    self.uncacheHtlm();
+                    self.uncacheHtml();
                 });
                 return self;
             },
@@ -959,7 +1062,7 @@ var TSF = (function ($) {
 
                 $html.stop().slideUp('slow', function () {
                     $html.remove();
-                    self.uncacheHtlm();
+                    self.uncacheHtml();
                 });
                 return self;
             },
@@ -1035,7 +1138,7 @@ var TSF = (function ($) {
 
                 $html.stop().slideUp('slow', function () {
                     $html.remove();
-                    self.uncacheHtlm();
+                    self.uncacheHtml();
                 });
                 return self;
             },
@@ -1052,13 +1155,58 @@ var TSF = (function ($) {
 
         var UploadPanel = Segue.Class('UploadPanel', {
             base: Segue.Element,
-            init: function () {
+            init: function (itemObj) {
+                var modelRef = {
+                    isNewItem: Segue.bindable(true)
+                };
+
                 Segue.Element.call(this, {
                     templateNode: $('#upload-panel-template').get(0),
-                    model: {}
+                    model: modelRef
                 });
 
+                this.photoHasChanged = false;
+                this.isEditing = false;
+                this.modelRef = modelRef;
+
+                if (itemObj) {
+                    this.setItem(itemObj);
+                }
                 return this;
+            },
+
+            setItem: function (itemObj) {
+                var self = this,
+                    $html = $(self.html());
+
+                self.item = itemObj;
+                self.photoHasChanged = false;
+                self.isEditing = true;
+                self.modelRef.isNewItem(false);
+
+                $(self.portals['item_title']).val(itemObj.title);
+                $(self.portals['item_category']).val(itemObj.category.id);
+                $(self.portals['item_desc']).val(itemObj.description);
+                $(self.portals['image_drop']).imagedrop('displayImageUrl', itemObj.image_url);
+
+                return self;
+            },
+
+            clearItem: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                delete self.item;
+                self.photoHasChanged = false;
+                self.isEditing = false;
+                self.modelRef.isNewItem(true);
+
+                $(self.portals['item_title']).val('');
+                $(self.portals['item_category']).val('');
+                $(self.portals['item_desc']).val('');
+                $(self.portals['image_drop']).imagedrop('clearFile');
+
+                return self;
             },
 
             html: function () {
@@ -1070,6 +1218,8 @@ var TSF = (function ($) {
 
                 var self = this;
 
+                self.photoHasChanged = false;
+
                 // Get Item categories
                 TSF.getCategories(function (data) {
                     if (!data['error'] && data instanceof Array) {
@@ -1077,6 +1227,9 @@ var TSF = (function ($) {
                         $.each(data, function (i, o) {
                             $catSel.append(new Option(o['name'], o['id']));
                         });
+                        if (self.item) {
+                            $catSel.val(self.item.category.id);
+                        }
                     }
                 });
 
@@ -1087,48 +1240,95 @@ var TSF = (function ($) {
                         util.alert('Please select a valid photo. Accepted image files are JPEG, PNG, or GIF, and are less than 8 MB.', 'Inavlid Photo');
                     },
                     onChange: function(element, file) {
-                        console.log("Change: " + ((file) ? (file.name || 'No File Name') : 'None'));
+                       self.photoHasChanged = true;
                     }
                 });
 
-                $(self.portals['btn_submit']).on('click', function (evt) {
-                    var newItem = {
-                        title: $(self.portals['item_title']).val(),
-                        category: $(self.portals['item_category']).val(),
-                        description: $(self.portals['item_desc']).val(),
-                        image: $(self.portals['image_drop']).imagedrop('file')
+
+                var _readAndValidate = function () {
+                    var title = $(self.portals['item_title']).val().trim(),
+                        category = $(self.portals['item_category']).val(),
+                        description =  $(self.portals['item_desc']).val().trim(),
+                        image = $(self.portals['image_drop']).imagedrop('file');
+
+                    // require photo if adding new item
+                    if (!self.isEditing && !image) {
+                        util.flashMessage('Please select a photo.');
+                        return false;
+                    }
+
+                    if (!title || '' === title) {
+                        util.flashMessage('What is title of this photo?');
+                        return false;
+                    }
+
+                    if (!category || '' === category) {
+                        util.flashMessage('Please select a category.');
+                        return false;
+                    }
+
+                    var item = {
+                        title: title,
+                        category: category,
+                        description: description
                     };
 
-                    if (!newItem.image) {
-                        util.alert('Please select a photo.');
-                        return;
+                    if (image) {
+                        item['image'] = image;
                     }
 
-                    if (!newItem.category || '' === newItem.category) {
-                        util.alert('Please select a category.');
-                        return;
-                    }
+                    return item;
+                };
 
+                var _callbackOptions = {
+                    progress: function(xhrObj, percent) {
+                        self._setProgress(percent);
+                    },
+
+                    success: function(data, textStatus, jqXHR) {
+                        util.flashMessage('Saved!');
+                        PageFactory.loadViewItemPage(data);
+                    },
+
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        var errMsg = (jqXHR.responseJSON && jqXHR.responseJSON.error && jqXHR.responseJSON.error.description) ?
+                                'ERROR: ' + jqXHR.responseJSON.error.description :
+                                'An error occurred while trying to save the item. Please try again later.';
+
+                        util.flashMessage(errMsg, 'error');
+                        self.disable(false);
+                        self._setProgress(0);
+                    }
+                };
+
+                $(self.portals['btn_submit']).on('click', function (evt) {
                     self.disable(true);
                     self._setProgress(0);
-                    TSF.newItem(newItem, {
-                        progress: function(xhrObj, percent) {
-                            self._setProgress(percent);
-                        },
-                        success: function(data, textStatus, jqXHR) {
-                            PageFactory.loadViewItemPage(data);
-                        },
-                        error: function(jqXHR, textStatus, errorThrown) {
-                            util.alert('An error occurred while trying to save the photo. Please try again later.');
-                            self.disable(false);
-                            self._setProgress(0);
-                        }
-                    });
 
+                    var updatedItem = _readAndValidate();
+                    if (updatedItem) {
+                        if (self.isEditing) {
+                            TSF.editItem($.extend({item_id: self.item.id}, updatedItem), _callbackOptions);
+                        } else {
+                            TSF.newItem(updatedItem, _callbackOptions);
+                        }
+                    } else {
+                        self.disable(false);
+                        self._setProgress(0);
+                    }
+                });
+
+                $(self.portals['btn_cancel']).on('click', function (evt) {
+                    PageFactory.loadViewItemPage(self.item);
+                });
+
+                $(self.portals['btn_delete']).on('click', function (evt) {
+                    PageFactory.loadDeleteItemPage(self.item);
                 });
 
                 return html;
             },
+
             _setProgress: function (percent) {
                 var self = this,
                     $progBar = $(self.portals['progress_bar']);
@@ -1161,7 +1361,7 @@ var TSF = (function ($) {
 
                 $html.stop().slideUp('slow', function () {
                     $html.remove();
-                    self.uncacheHtlm();
+                    self.uncacheHtml();
                 });
                 return self;
             },
@@ -1179,12 +1379,44 @@ var TSF = (function ($) {
         var ItemViewPanel = Segue.Class('ItemViewPanel', {
             base: Segue.Element,
             init: function (itemObj) {
+                var bindableItem = util.createBindableItemObj();
                 Segue.Element.call(this, {
                     templateNode: $('#item-view-panel-template').get(0),
-                    model: itemObj
+                    model: bindableItem
                 });
 
+                if (itemObj) {
+                    this.setItem(itemObj);
+                }
+
                 return this;
+            },
+
+            setItem: function (itemObj) {
+                this.item = itemObj;
+                util.updateBindableValues(this.options.model, itemObj);
+                return this;
+            },
+
+            html: function () {
+                if (this.cachedHtml) {
+                    return this.cachedHtml;
+                }
+                var html = Segue.Element.prototype.html.call(this);
+
+                var self = this;
+
+                $(self.portals['edit_button']).on('click', function (evt) {
+                    evt.preventDefault();
+                    PageFactory.loadEditItemPage(self.item);
+                });
+
+                $(self.portals['delete_button']).on('click', function (evt) {
+                    evt.preventDefault();
+                    PageFactory.loadDeleteItemPage(self.item);
+                });
+
+                return html;
             },
 
             dismiss: function () {
@@ -1193,7 +1425,7 @@ var TSF = (function ($) {
 
                 $html.stop().hide('slow', function () {
                     $html.remove();
-                    self.uncacheHtlm();
+                    self.uncacheHtml();
                 });
                 return self;
             },
@@ -1208,15 +1440,105 @@ var TSF = (function ($) {
             }
         });
 
+        var ItemDeletePanel = Segue.Class('ItemDeletePanel', {
+            base: Segue.Element,
+            init: function (itemObj) {
+                var bindableItem = util.createBindableItemObj();
+                Segue.Element.call(this, {
+                    templateNode: $('#item-delete-panel-template').get(0),
+                    model: bindableItem
+                });
+
+                if (itemObj) {
+                    this.setItem(itemObj);
+                }
+
+                return this;
+            },
+
+            html: function () {
+                if (this.cachedHtml) {
+                    return this.cachedHtml;
+                }
+                var html = Segue.Element.prototype.html.call(this);
+
+                var self = this;
+
+                $(self.portals['btn_cancel']).on('click', function (evt) {
+                    PageFactory.loadViewItemPage(self.item);
+                });
+
+                $(self.portals['btn_delete']).on('click', function (evt) {
+                    TSF.deleteItem(self.item.id, self.nonceToken, {
+                        success: function(data, textStatus, jqXHR) {
+                            util.flashMessage('Item deleted!');
+                            // TODO: Load Myshots page
+                            PageFactory.loadHomePage();
+                        },
+                        error: function(jqXHR, textStatus, errorThrown) {
+                            var errMsg = (jqXHR.responseJSON && jqXHR.responseJSON.error && jqXHR.responseJSON.error.description) ?
+                                    'ERROR: ' + jqXHR.responseJSON.error.description :
+                                    'An error occurred while trying to delete the item. Please try again later.';
+
+                            util.flashMessage(errMsg, 'error');
+                        }
+                    });
+                });
+
+                return html;
+            },
+
+            setItem: function (itemObj) {
+                this.item = itemObj;
+                util.updateBindableValues(this.options.model, itemObj);
+                return this;
+            },
+
+            setNonceToken: function (token) {
+                this.nonceToken = token;
+                return this;
+            },
+
+            dismiss: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                $html.stop().slideUp('slow', function () {
+                    $html.remove();
+                    self.uncacheHtml();
+                });
+                return self;
+            },
+
+            load: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                self.container.append($html);
+                $html.stop().hide().slideDown('slow');
+                return self;
+            }
+        });
+
         var PageFactory = function () {
             var cachedPages = {};
 
-            var createMessagePage = function (message) {
-                if (cachedPages['messagepage']) {
-                    cachedPages['messagepage'].setMessage(message);
-                    return cachedPages['messagepage'];
-                }
+            var cachablePage = function (pagekey, creation, beforeReturningCache) {
+                return function () {
+                    if (cachedPages[pagekey]) {
+                        if (beforeReturningCache) {
+                            beforeReturningCache.apply(cachedPages[pagekey], arguments);
+                        }
+                        return cachedPages[pagekey];
+                    }
 
+                    cachedPages[pagekey] = creation.apply(this, arguments);
+
+                    return cachedPages[pagekey];
+                };
+            };
+
+            var createMessagePage = cachablePage('messagepage', function (message) {
                 var msgPage = new SPage('Message Page');
                 msgPage.navbar = 'shrink';
                 msgPage.showCover = false;
@@ -1228,15 +1550,12 @@ var TSF = (function ($) {
                 msgPage.setMessage(message);
                 msgPage.addChildElement(msgPanel);
 
-                cachedPages['messagepage'] = msgPage;
                 return msgPage;
-            };
+            }, function (message) {
+                this.setMessage(message);
+            });
 
-            var createLoginPage = function () {
-                if (cachedPages['loginpage']) {
-                    return cachedPages['loginpage'];
-                }
-
+            var createLoginPage = cachablePage('loginpage', function () {
                 var loginPage = new SPage('Login Page');
                 loginPage.navbar = 'shrink';
                 loginPage.showCover = false;
@@ -1245,51 +1564,49 @@ var TSF = (function ($) {
                 loginPage.loadNext = function () {
                     var self = this;
                     if (self.next) {
-                        Segue.loadPage(self.next, self.nextUrl);
+                        if ('function' === typeof self.next) {
+                            self.next();
+                        } else {
+                            Segue.loadPage(self.next, self.nextUrl);
+                        }
                     } else {
                         PageFactory.loadHomePage();
                     }
                 };
 
-                loginPage.addChildElement(new LoginPanel([
-                    {
-                        buttonClass: 'gplus-button',
-                        displayText: 'Sign in with Goolge',
-                        click: function (event) {
-                            TSF.googleLogin(function (data) {
-                                if (data['error']) {
-                                    util.alert('There was an error authenticating the user.');
-                                } else {
-                                    loginPage.loadNext();
-                                }
-                            });
-                        }
-                    },
-
-                    {
-                        buttonClass: 'fb-button',
-                        displayText: 'Sign in with Facebook',
-                        click: function (event) {
-                            TSF.facebookLogin(function (data) {
-                                if (data['error']) {
-                                    util.alert('There was an error authenticating the user.');
-                                } else {
-                                    loginPage.loadNext();
-                                }
-                            });
-                        }
+                var googleButton = {
+                    buttonClass: 'gplus-button',
+                    displayText: 'Sign in with Goolge',
+                    click: function (event) {
+                        TSF.googleLogin(function (data) {
+                            if (data['error']) {
+                                util.flashMessage('There was an error authenticating the user.', 'error');
+                            } else {
+                                loginPage.loadNext();
+                            }
+                        });
                     }
-                ]));
+                };
 
-                cachedPages['loginpage'] = loginPage;
+                var facebookButton = {
+                    buttonClass: 'fb-button',
+                    displayText: 'Sign in with Facebook',
+                    click: function (event) {
+                        TSF.facebookLogin(function (data) {
+                            if (data['error']) {
+                                util.flashMessage('There was an error authenticating the user.', 'error');
+                            } else {
+                                loginPage.loadNext();
+                            }
+                        });
+                    }
+                };
+
+                loginPage.addChildElement(new LoginPanel([googleButton, facebookButton]));
                 return loginPage;
-            };
+            });
 
-            var createLogoutPage = function () {
-                if (cachedPages['lougoutpage']) {
-                    return cachedPages['lougoutpage'];
-                }
-
+            var createLogoutPage = cachablePage('lougoutpage', function () {
                 var logoutPage = new SPage('Logout Page');
                 logoutPage.navbar = 'shrink';
                 logoutPage.showCover = false;
@@ -1297,80 +1614,76 @@ var TSF = (function ($) {
 
                 logoutPage.addChildElement(new MessagePannel('You have singed out.'));
 
-                cachedPages['lougoutpage'] = logoutPage;
                 return logoutPage;
-            };
+            });
 
-            var createUploadPage = function () {
-                if (cachedPages['uploadpage']) {
-                    return cachedPages['uploadpage'];
-                }
+            var createUploadPage = cachablePage('uploadpage', function () {
+                var uploadP = new SPage('Upload Page'),
+                    panelEl = new UploadPanel();
 
-                var uploadP = new SPage('Upload Page');
                 uploadP.navbar = 'shrink';
                 uploadP.showCover = false;
                 uploadP.isUploadPage = true;
                 uploadP.requireLogin = true;
 
-                uploadP.addChildElement(new UploadPanel());
+                uploadP.setItem = function (itemObj) {
+                    uploadP.item = itemObj;
+                    panelEl.setItem(itemObj);
+                    return uploadP;
+                };
 
-                cachedPages['uploadpage'] = uploadP;
-                return uploadP;
-            };
-
-            var createItemViewPage = function () {
-                if (cachedPages['viewitem']) {
-                    return cachedPages['viewitem'];
+                uploadP.clearItem = function () {
+                    delete uploadP.item;
+                    panelEl.clearItem();
+                    return uploadP;
                 }
 
+                uploadP.addChildElement(panelEl);
+                return uploadP
+            });
+
+            var createItemViewPage = cachablePage('viewitempage', function () {
                 var itemViewPage = new SPage('Item View Page');
                 itemViewPage.navbar = 'shrink';
                 itemViewPage.showCover = false;
 
-                var bindableItem = Segue.makeObjectBindable({
-                    author_id: 0,
-                    author: {id: 0, name: '', picture: ''},
-                    category_id: 1,
-                    category: {id: 0, name: ''},
-                    id: 0,
-                    date_created: '',
-                    description: '',
-                    image_url: '',
-                    last_modified: '',
-                    title: ''
-                });
-
-                var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                bindableItem['displayDate'] = Segue.computed(function () {
-                    var d = new Date(bindableItem.date_created());
-                    return months[d.getMonth()] + ' ' + d.getDate() + ', ' +  d.getFullYear();
-                }, bindableItem).subscribeTo(bindableItem.date_created);
-
-                bindableItem['readOnly'] = Segue.computed(function () {
-                    var currentUser = TSF.currentUser();
-                    return  !currentUser || (currentUser.id !== bindableItem.author.id());
-                }, bindableItem).subscribeTo(bindableItem.author.id);
-
-                var updateValues = function (bindableDist, srcObj) {
-                    $.each(bindableDist, function (k, v) {
-                        if ('object' === typeof v) {
-                            updateValues(v, srcObj[k]);
-                        } else {
-                            v(srcObj[k]);
-                        }
-                    });
-                };
+                var itemPanelObj = new ItemViewPanel();
 
                 itemViewPage.setItem = function (item) {
                     itemViewPage.item = item;
-                    updateValues(bindableItem, item);
+                    itemPanelObj.setItem(item);
+                    return itemViewPage;
                 };
 
-                itemViewPage.addChildElement(new ItemViewPanel(bindableItem));
+                itemViewPage.addChildElement(itemPanelObj);
 
-                cachedPages['viewitem'] = itemViewPage;
                 return itemViewPage;
-            };
+            });
+
+            var createDeleteItemPage = cachablePage('deleteitempage', function () {
+                var itemDeletePage = new SPage('Item Delete Page');
+                itemDeletePage.navbar = 'shrink';
+                itemDeletePage.showCover = false;
+                itemDeletePage.requireLogin = true;
+
+                var deletePanel = new ItemDeletePanel();
+
+                itemDeletePage.setItem = function (item) {
+                    itemDeletePage.item = item;
+                    deletePanel.setItem(item);
+                    return itemDeletePage;
+                };
+
+                itemDeletePage.setNonceToken = function (token) {
+                    itemDeletePage.nonceToken = token;
+                    deletePanel.setNonceToken(token);
+                    return itemDeletePage;
+                },
+
+                itemDeletePage.addChildElement(deletePanel);
+
+                return itemDeletePage;
+            });
 
             var pageLoaders = {
                 homepage: function (pageData) {
@@ -1391,7 +1704,7 @@ var TSF = (function ($) {
                         id: 'latest',
                         name: 'Latest Shots'
                     };
-                    
+
                     var pnlObj = new Panel(latestPanel);
                     homePage.addChildElement(pnlObj);
                     _getItems(pnlObj, latestPanel.id);
@@ -1417,19 +1730,117 @@ var TSF = (function ($) {
                 },
 
                 uploadpage: function (pageData) {
-                    Segue.loadPage(createUploadPage(), '/pages/item/new/');
+                    var uploadpage = createUploadPage();
+                    uploadpage.clearItem();
+                    Segue.loadPage(uploadpage, '/pages/item/new/');
                 },
 
-                viewitem: function (pageData) {
+                viewitempage: function (pageData) {
                     TSF.getItem(pageData.id, function (itemObj) {
                         if (itemObj && !itemObj['error']) {
                             var viPage = createItemViewPage();
                             viPage.setItem(itemObj);
                             Segue.loadPage(viPage, '/pages/item/' + itemObj.id + '/');
                         } else {
-                            Segue.loadPage(createMessagePage('Item not found.'), '/pages/item/' + itemObj.id + '/');
+                            Segue.loadPage(createMessagePage('Item not found.'), '/pages/item/' + pageData.id + '/');
                         }
                     });
+                },
+
+                edititempage: function (pageData, item) {
+
+                    var editThisItem = function (itemObj) {
+ 
+                        var doLoadEditPage = function () {
+                            if (itemObj.author.id === TSF.currentUser().id) {
+                                var edtItmPage = createUploadPage();
+                                edtItmPage.setItem(itemObj);
+                                Segue.loadPage(edtItmPage, '/pages/item/' + itemObj.id + '/edit/');
+                            } else {
+                                var viPage = createItemViewPage();
+                                viPage.setItem(itemObj);
+                                Segue.loadPage(viPage, '/pages/item/' + itemObj.id + '/');
+                                util.flashMessage('You don\'t have access to edit this item.', 'error');
+                            }
+                        };
+
+                        TSF.hasActiveUser(function (isSignedIn) {
+                            if (!isSignedIn) {
+                                var loginPage = createLoginPage();
+                                loginPage.next = function () {
+                                    doLoadEditPage();
+                                };
+                                Segue.loadPage(loginPage, '/pages/login/');
+                                util.flashMessage('Sign in to edit this item.');
+                            } else {
+                                doLoadEditPage();
+                            }
+                        });
+                    };
+
+                    if (item) {
+                        editThisItem(item);
+                    } else {
+                        TSF.getItem(pageData.id, function (itemObj) {
+                            if (itemObj && !itemObj['error']) {
+                                editThisItem(itemObj);
+                            } else {
+                                Segue.loadPage(createMessagePage('Item not found.'), '/pages/item/' + pageData.id + '/edit/');
+                            }
+                        });
+                    }
+                },
+
+                deleteitempage: function (pageData, item) {
+                    var confirmDelete = function (itemObj) {
+                        var doLoadDeletePage = function () {
+                            TSF.requestDeleteItem(itemObj.id, function (response) {
+                                if (response['nonce_token']) {
+                                    var delItmPage = createDeleteItemPage();
+                                    delItmPage.setItem(itemObj);
+                                    delItmPage.setNonceToken(response['nonce_token']);
+                                    Segue.loadPage(delItmPage, '/pages/item/' + itemObj.id + '/delete/');
+                                } else {
+                                    var errCode = (response['error']) ? response['error']['code'] : -1;
+                                    if (404 === errCode) {
+                                        Segue.loadPage(createMessagePage('Item not found.'), '/pages/item/' + itemObj.id + '/delete/');
+                                    } else if (401 === errCode) {
+                                        var viPage = createItemViewPage();
+                                        viPage.setItem(itemObj);
+                                        Segue.loadPage(viPage, '/pages/item/' + itemObj.id + '/');
+                                        util.flashMessage('You are not authorized to delete this item.', 'error');
+                                    } else {
+                                        Segue.loadPage(createMessagePage('Item cannot be deleted.'), '/pages/item/' + itemObj.id + '/delete/');
+                                    }
+                                }
+                            });
+                        };
+
+                        TSF.hasActiveUser(function (isSignedIn) {
+                            if (!isSignedIn) {
+                                var loginPage = createLoginPage();
+                                loginPage.next = function () {
+                                    doLoadDeletePage();
+                                };
+                                Segue.loadPage(loginPage, '/pages/login/');
+                                util.flashMessage('Sign in to confirm deleting this item.');
+                            } else {
+                                doLoadDeletePage();
+                            }
+                        });
+                    };
+
+                    if (item) {
+                        confirmDelete(item);
+                    } else {
+                        TSF.getItem(pageData.id, function (itemObj) {
+                            if (itemObj && !itemObj['error']) {
+                                confirmDelete(itemObj);
+                            } else {
+                                Segue.loadPage(createMessagePage('Item not found.'), '/pages/item/' + pageData.id + '/delete/');
+                            }
+                        });
+                    }
                 }
             };
 
@@ -1492,6 +1903,14 @@ var TSF = (function ($) {
                     var viPage = createItemViewPage();
                     viPage.setItem(itemObj);
                     Segue.loadPage(viPage, '/pages/item/' + itemObj.id + '/')
+                },
+
+                loadEditItemPage: function (itemObj) {
+                    pageLoaders['edititempage']({}, itemObj);
+                },
+
+                loadDeleteItemPage: function (itemObj) {
+                    pageLoaders['deleteitempage']({}, itemObj);
                 }
             };
         }();
@@ -1543,7 +1962,7 @@ var TSF = (function ($) {
                 }
 
                 // Load all other images 6 seconds later
-                //      to yeild bandwith to other page data
+                //      to yield bandwith to other page data
                 setTimeout(function () {
                     $.each(data, function (i, o) {
                         pageCover.addImage(o);
@@ -1551,126 +1970,6 @@ var TSF = (function ($) {
                 }, 6000);
             }
         });
-
-
-
-
-        // Instantiations
-        // var asiaPanel = {
-        //     title: Segue.bindable('Asia Town'),
-        //     items: [
-        //         {image_url: 'http://i.imgur.com/bwy74ok.jpg'},
-        //         {image_url: 'http://i.imgur.com/bAZWoqx.jpg'},
-        //         {image_url: 'http://i.imgur.com/PgmEBSB.jpg'},
-        //         {image_url: 'http://i.imgur.com/aboaFoB.jpg'},
-        //         {image_url: 'http://i.imgur.com/LkmcILl.jpg'},
-        //         {image_url: 'http://i.imgur.com/q9zO6tw.jpg'},
-        //         {image_url: 'http://i.imgur.com/r8p3Xgq.jpg'},
-        //         {image_url: 'http://i.imgur.com/hODreXI.jpg'},
-        //         {image_url: 'http://i.imgur.com/UORFJ3w.jpg'}
-        //     ]
-        // };
-        // w['asiaPanel'] = asiaPanel;
-
-        // var navBar = new NavBar();
-        // w['navBar'] = navBar;
-
-        // var pageCover = new Cover();
-        // // TODO: Load only first image.
-        // //          load suceeding images 5 seconds later
-        // //          to allow the rest of the page to load first
-        // pageCover.addImage('/static/images/cover_1.jpg');
-        // pageCover.addImage('/static/images/cover_2.jpg');
-        // pageCover.addImage('/static/images/cover_3.jpg');
-
-        // var homePage = new SPage('Home Page');
-        // homePage.showCover = true;
-        // homePage.addChildElement(new Panel(asiaPanel));
-        // homePage.addChildElement(new Panel(asiaPanel));
-
-        // //$('#body-content').empty();
-        // //Segue.loadPage(homePage);
-        // w['myHomePage'] = homePage;
-
-        // Login Page
-        // var loginPage = new SPage('Login Page');
-        // loginPage.navbar = 'shrink';
-        // loginPage.showCover = false;
-        // loginPage.isLoginPage = true;
-        // loginPage.addChildElement(new LoginPanel([
-        //     {
-        //         buttonClass: 'gplus-button',
-        //         displayText: 'Sign in with Goolge',
-        //         click: function (event) {
-        //             console.log('Do goggle login here');
-        //             TSF.googleLogin(function (data) {
-        //                 // TODO: Check for login error
-        //                 console.log('Google login complete.');
-        //                 console.dir(data);
-        //             });
-        //         }
-        //     },
-
-        //     {
-        //         buttonClass: 'fb-button',
-        //         displayText: 'Sign in with Facebook',
-        //         click: function (event) {
-        //             console.log('Do facebook login here');
-        //             // TODO: Check for login error
-        //             TSF.facebookLogin(function (data) {
-        //                 console.log('Facebook login complete.');
-        //                 console.dir(data);
-        //             });
-        //         }
-        //     }
-        // ]));
-
-        // navBar.setActionFor('login', function () {
-        //     var curPage = Segue['storybook']['currentPage'];
-        //     loginPage.next = (curPage && curPage !== loginPage) ? curPage : false;
-        //     Segue.loadPage(loginPage, '/pages/login/');
-        // })
-
-
-        // // Upload Page
-        // var uploadPage = new SPage('Upload Page');
-        // uploadPage.navbar = 'grow';
-        // uploadPage.showCover = true;
-
-        // navBar.setActionFor('upload', function () {
-        //     Segue.loadPage(uploadPage, '/pages/upload/');
-        // })
-
-
-        // var myModel = new function () {
-        //     var self = this;
-        //     this.color =  Segue.bindable('yellow');
-        //     this.background =  Segue.bindable('blue');
-
-        //     self.user = {
-        //         firstName: Segue.bindable('John'),
-        //         lastName:  Segue.bindable('Smith')
-        //     };
-
-        //     self.user.fullName = Segue.computed(function () {
-        //         return self.user.lastName() + ', ' + self.user.firstName();
-        //     }).subscribeTo(self.user.firstName, self.user.lastName);
-
-        //     self.item = {
-        //         image_url: Segue.bindable('http://i.imgur.com/UORFJ3w.jpg'),
-        //         target: 'self'
-        //     };
-        // }; 
-
-        // w['myModel'] = myModel;
-
-        // var template = $('#grid-item-template').get(0);
-        
-        // var rootNode = d.importNode(template.content, true);
-        // Segue.applyBindings(rootNode, myModel);
-
-        // var newItem = $(rootNode.childNodes);
-        // console.dir($('.grid').append(newItem).isotope('appended', newItem));
 
     });
 })(window, document, jQuery);

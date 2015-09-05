@@ -90,11 +90,19 @@ def save_item(item):
     except IntegrityError:
         return  None
 
+def delete_item(item):
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        return True
+    except IntegrityError:
+        return False
+
 def get_item_by_id(item_id):
     return Item.query.filter_by(id=item_id).first()
 
-def get_item_with_id_salt_type_or_404(id, salt, image_type):
-    return Item.query.filter_by(id=id, salt=salt, image_type=image_type).first_or_404()
+def get_item_with_id_salt_type_or_404(item_id, salt, image_type):
+    return Item.query.filter_by(id=item_id, salt=salt, image_type=image_type).first_or_404()
 
 def get_latest_items(limit=8, page=0):
     return Item.query.order_by(Item.date_created.desc()).limit(limit).offset(page)

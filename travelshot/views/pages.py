@@ -63,7 +63,19 @@ def new_item():
 @util.smart_request
 def view_item(item_id):
     '''Test route'''
-    return {'pagetype': 'viewitem', 'id': item_id}
+    return {'pagetype': 'viewitempage', 'id': item_id}
+
+@pages.route('/item/<int:item_id>/edit/', methods=['GET'])
+@util.smart_request
+def edit_item(item_id):
+    '''Test route'''
+    return {'pagetype': 'edititempage', 'id': item_id}
+
+@pages.route('/item/<int:item_id>/delete/', methods=['GET'])
+@util.smart_request
+def delete_item(item_id):
+    '''Test route'''
+    return {'pagetype': 'deleteitempage', 'id': item_id}
 
 # TODO: Remove this function
 @pages.route('/uploadxxx/')
@@ -73,10 +85,10 @@ def uploadxxx():
 
 @pages.route('/image/<key>/<filename>', methods=['GET'])
 def view_mage(key, filename):
-    id = ''
+    item_id = ''
     ext = ''
     if '.' in filename:
-        (id, ext) = filename.rsplit('.', 1)
-    get_item_with_id_salt_type_or_404(id, key, ext)
+        (item_id, ext) = filename.rsplit('.', 1)
+    get_item_with_id_salt_type_or_404(item_id, key, ext)
     return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
                                filename)

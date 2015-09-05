@@ -520,7 +520,7 @@ textarea {
 /************************ Login Panel ************************/
 .view-port-max {
     width: 100%;
-    min-height: 500px;
+    overflow: auto;
     height: -webkit-calc(100vh - 130px);
     height:    -moz-calc(100vh - 130px);
     height:         calc(100vh - 130px);
@@ -532,7 +532,6 @@ textarea {
 
 .view-port-center {
     display: inline-block;
-
     position: relative;
     top: 50%;
     left: 50%;
@@ -544,11 +543,9 @@ textarea {
 .shadowed-box {
     padding: 60px 60px 60px 60px;
     border-radius: 10px;
-
     border-color: rgba(255, 81, 8, 0.5);
     border-width: 1px;
     border-style: solid;
-
     -webkit-box-shadow: 2px 2px 5px 3px rgba(143, 143, 143, 0.1);
        -moz-box-shadow: 2px 2px 5px 3px rgba(143, 143, 143, 0.1);
             box-shadow: 2px 2px 5px 3px rgba(143, 143, 143, 0.1);
@@ -725,8 +722,12 @@ textarea {
     height: 100%;
 }
 
-.item-user-inputs {
-   
+.item-user-inputs  > div:last-of-type > div:last-of-type {
+   margin-top: 25px;
+}
+
+.item-user-inputs  > div:last-of-type > div:last-of-type button {
+   margin-bottom: 15px;
 }
 
 .item-user-inputs input {
@@ -793,7 +794,7 @@ textarea {
     padding-bottom: 10px;
 }
 
-.itm-v-detail a {
+.itm-v-detail > a {
     color: inherit;
 }
 
@@ -840,6 +841,51 @@ textarea {
     }
 }
 /************************ END: Item View Panel ************************/
+
+/************************ Item Delete Panel ************************/
+.delete-panel {
+    overflow: hidden;
+}
+
+.delete-panel .shadowed-box {
+    padding: 10px 10px 10px 10px;
+    width: 520px;
+}
+
+.delete-panel .row > div:first-child {
+    padding-right: 5px;
+}
+
+.delete-panel .row > div:first-child img {
+    max-width: 100%;
+    height: auto;
+}
+
+.delete-panel .row > div:last-child {
+    padding-left: 5px;
+}
+
+.delete-panel .row > div:last-child h4 {
+     color: #FF5208;
+}
+
+.delete-panel .row > div:last-child h4 big {
+    color: #05AE6A;
+}
+
+.delete-panel .row > div:last-child p {
+    font-size: 12px;
+}
+
+.delete-panel .row > div:last-child div {
+    float: right;
+}
+
+.delete-panel .row > div:last-child div button {
+    width: 150px;
+}
+
+/************************ END: Item Delete Panel ************************/
 
 .btn-default {
     color: #FF5208;
@@ -919,6 +965,33 @@ fieldset[disabled] .btn-primary.focus {
 
 .page-footer {
     font-family: 'Roboto', sans-serif, arial;
+}
+
+.flash-message {
+    background-color: #FFF3A5;
+    position: fixed;
+    top: 70px;
+    width: 80vw;
+    z-index: 10000;
+    left: 50%;
+    text-align: center;
+    padding: 20px;
+    border-radius: 5px;
+    border-color: #AE3400;
+    border-width: 1px;
+    border-style: solid;
+    color: #4E1700;
+    opacity: 0.9;
+    display: none;
+
+    -webkit-transform: translateX(-50%);
+           -moz-transform: translateX(-50%);
+                transform: translateX(-50%);
+}
+
+.flash-msg-error {
+    color: #FFF;
+    background-color: #D9534F;
 }
 
 /* ==========================================================================

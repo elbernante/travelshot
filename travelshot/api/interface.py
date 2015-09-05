@@ -20,6 +20,7 @@ from ..utils import datastore as ds
 
 from . import api
 
+# TODO: Remove this unused import
 import json
 
 def serialize_item_object(itemObj):
@@ -51,7 +52,7 @@ def serialize_item_object(itemObj):
     else:
         category = cat.serialize
     item_dict['category'] = category
-    
+
     return item_dict
 
 
@@ -147,12 +148,17 @@ def edit_item(item_id):
     if data is None:
         raise BadRequest('Invalid edit request.')
 
-    if item_id != data.get('item_id', None):
+    try:
+        req_item_id = int(data.get('item_id', None))
+    except ValueError:
+        raise BadRequest('Invalid item ID.')
+
+    if item_id != req_item_id:
         raise BadRequest('Invalid item.')
 
     item = ds.get_item_by_id(item_id)
     if item is None:
-        raise BadRequest('Invalid item.')
+        raise NotFound('Item not found.')
 
     if item.author_id != login_session.get('user_id'):
         raise Unauthorized('Edit access denied.')
@@ -169,6 +175,7 @@ def edit_item(item_id):
 
         img_type = image.filename.rsplit('.', 1)[1]
         item.image_type = img_type
+        item.salt = util.random_key()
 
     item = ds.save_item(item)
     if item is None:
@@ -182,6 +189,38 @@ def edit_item(item_id):
     # item_dict = item.serialize
     # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
     return serialize_item_object(item)
+
+@api.route('/item/<int:item_id>/delete/', methods=['GET', 'POST'])
+@util.csrf_protect_enable
+@util.require_login
+@util.format_response
+def delete_item(item_id):
+    item = ds.get_item_by_id(item_id)
+    if item is None:
+        raise NotFound('Item not found.')
+
+    if item.author_id != login_session.get('user_id'):
+        raise Unauthorized('Delete access denied.')
+
+    token_key = 'delete_nonce_token'
+    key = '{}:{}'.format(token_key, item_id)
+    if request.method == 'GET':
+        login_session[key] = util.random_key()
+        return {'nonce_token': login_session[key]}
+    else:
+        token = request.json.get('nonce_token', None)
+        if token is None:
+            raise BadRequest('Invalid nonce token.')
+
+        stored_token = login_session.get(key, None)
+        if stored_token != token:
+            raise BadRequest('Invalid nonce token.')
+
+        del login_session[key]
+        if not ds.delete_item(item):
+            raise BadRequest('Error deleting item.')
+
+        return {'success': True}
 
 
 # @api.route('/tesapi/', methods=['GET', 'POST'])

@@ -201,11 +201,16 @@ function copyOwnPropertiesFrom(target, source) {
         // save current page to history
         if (!storybook['initialPage']) {
             storybook['initialPage'] = pageObj;
-            storybook['initialPageUrl'] = url;
+            storybook['initialPageUrl'] = d.location.pathname;
+            if (url) {
+                var storyId = nextSequence();
+                storybook[storyId] = pageObj;
+                w.history.replaceState({storyId: storyId}, title, url);
+            }
         } else {
             var storyId = nextSequence();
             storybook[storyId] = pageObj;
-            w.history.pushState({storyId: storyId}, title || 'No Title', url);
+            w.history.pushState({storyId: storyId}, title, url);
         }
 
         if (storybook['currentPage']) {
@@ -499,7 +504,7 @@ function copyOwnPropertiesFrom(target, source) {
                     hasDisplay = false,
                     displayCss = (newVal) ? 'display: none !important;' : 'display: block;';
 
-                styleVal.replace(/(?:;|\s*|^)(display\s*\:.*?(?:$|;))/, function (m, p1, o, str) {
+                styleVal = styleVal.replace(/(?:;|\s*|^)(display\s*\:.*?(?:$|;))/, function (m, p1, o, str) {
                     hasDisplay = true;
                     return m.replace(p1, displayCss);
                 });
@@ -623,7 +628,7 @@ function copyOwnPropertiesFrom(target, source) {
             return this.cachedHtml;
         },
 
-        uncacheHtlm: function () {
+        uncacheHtml: function () {
             var self = this,
                 sub = self.portals['_subcriptions'].pop();
 

@@ -74,6 +74,16 @@ def format_response(func):
     return wrapper
 
 
+def format_data(data, data_format):
+    if data_format == 'xml':
+        formatted = dicttoxml(data, attr_type=False)
+        content_type = 'application/xml'
+    else:
+        formatted = json.dumps(data, ensure_ascii=False)
+        content_type = 'application/json'
+    return formatted, content_type
+
+
 def validate_token(key):
     def token_validator(func):
         @wraps(func)
@@ -119,9 +129,11 @@ def require_login(func):
         return func(*args, **kwargs)
     return wrapper
 
+
 @format_response
 def format_data_response(data):
     return data
+
 
 def smart_request(func):
     @wraps(func)
@@ -136,18 +148,9 @@ def smart_request(func):
         return render_template('index.html')
     return wrapper
 
+
 def random_key():
     return ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
-
-
-def format_data(data, data_format):
-    if data_format == 'xml':
-        formatted = dicttoxml(data, attr_type=False)
-        content_type = 'application/xml'
-    else:
-        formatted = json.dumps(data, ensure_ascii=False)
-        content_type = 'application/json'
-    return formatted, content_type
 
 
 def allowed_file(filename):
@@ -160,4 +163,3 @@ def to_json(text):
         return json.loads(text, encoding='utf-8')
     except:
         return None
-
