@@ -42,6 +42,7 @@ def serialize_item_object(itemObj):
             'picture': user.picture
         }
     item_dict['author'] = author
+    del item_dict['author_id']
 
     cat = ds.get_category_by_id(itemObj.category_id)
     if cat is None:
@@ -52,6 +53,7 @@ def serialize_item_object(itemObj):
     else:
         category = cat.serialize
     item_dict['category'] = category
+    del item_dict['category_id']
 
     return item_dict
 
@@ -75,10 +77,26 @@ def get_categories():
         cats.append(v.serialize)
     return cats
 
+@api.route('/category/<int:category_id>/', methods=['GET'])
+@util.format_response
+def get_category(category_id):
+    category = ds.get_category_by_id(category_id)
+    if category is None:
+        raise NotFound('Category not found.')
+
+    query = ds.get_all_items_for_category(category_id)
+    items = []
+    for i in query:
+        items.append(serialize_item_object(i))
+
+    return {
+        'category': category.serialize,
+        'items': items
+    }
+
 @api.route('/items/<int:category_id>/', methods=['GET'])
 @util.format_response
 def get_items_for_category(category_id):
-    print(type(category_id))
     res = ds.get_items_for_category(category_id)
     items = []
     for v in res:
@@ -99,7 +117,6 @@ def get_latest_items():
 @util.require_login
 @util.format_response
 def upload_new_item():
-
     image = request.files.get('image', None)
     if image is None or not util.allowed_file(image.filename):
         raise BadRequest('Invalid image.')

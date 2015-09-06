@@ -194,7 +194,9 @@ function copyOwnPropertiesFrom(target, source) {
     /////////////////// Segue Page Loading Tools ///////////////////
     var loadPage = function (pageObj, url, title) {
 
-        if (storybook['currentPage'] && storybook['currentPage'] === pageObj) {
+        if (storybook['currentPage']
+            && storybook['currentPage'] === pageObj
+            && d.location.pathname === url) {
             return;
         }
 
@@ -218,8 +220,14 @@ function copyOwnPropertiesFrom(target, source) {
         }
 
         segue['fireEvent']('pageWillLoad', pageObj);
+
+        var prevPage = storybook['currentPage'];
         storybook['currentPage'] = pageObj;
-        pageObj.load();
+        if (prevPage === pageObj && pageObj.refresh) {
+            pageObj.refresh();
+        } else {
+            pageObj.load();
+        }
         segue['fireEvent']('pageLoad', pageObj);
         return pageObj;
     };
@@ -239,6 +247,9 @@ function copyOwnPropertiesFrom(target, source) {
         if (pageObj) {
             if (storybook['currentPage']) {
                 if (storybook['currentPage'] === pageObj) {
+                    if (pageObj.refresh) {
+                        pageObj.refresh();
+                    }
                     return;
                 }
                 storybook['currentPage'].dismiss();

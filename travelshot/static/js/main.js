@@ -416,6 +416,10 @@ var TSF = (function ($) {
             util.simpleGet('/api/items/' + catId + '/', callback);
         },
 
+        getCategoryItems: function (catId, callback) {
+            util.simpleGet('/api/category/' + catId + '/', callback);
+        },
+
         newItem: function (itemObj, callbacks) {
             var ajaxUpload = new AjaxUpload($.extend({
                 resizeImageOnSize: 256 * 1024,
@@ -485,9 +489,7 @@ var TSF = (function ($) {
 
                 createBindableItemObj: function () {
                     var bindableItem = Segue.makeObjectBindable({
-                        author_id: 0,
                         author: {id: 0, name: '', picture: ''},
-                        category_id: 0,
                         category: {id: 0, name: ''},
                         id: 0,
                         date_created: '',
@@ -507,6 +509,10 @@ var TSF = (function ($) {
                         var currentUser = TSF.currentUser();
                         return  !currentUser || (currentUser.id !== bindableItem.author.id());
                     }, bindableItem).subscribeTo(bindableItem.author.id);
+
+                    bindableItem['categoryUrl'] = Segue.computed(function () {
+                        return '/pages/category/' + bindableItem.category.id() + '/';
+                    }, bindableItem).subscribeTo(bindableItem.category.id);
 
                     bindableItem['editUrl'] = Segue.computed(function () {
                         return '/pages/item/' + bindableItem.id() + '/edit/';
@@ -748,6 +754,38 @@ var TSF = (function ($) {
             }
         });
 
+        var Footer = Segue.Class('Footer', {
+            base: Segue.Element,
+            init : function () {
+                Segue.Element.call(this, {
+                    templateNode: $('#page-footer').get(0),
+                    model: {}
+                });
+
+                var self = this;
+
+                Segue.on('pageLoad', function (pageObj) {
+                    self.pageWantsFooter = !pageObj.hideFooter;
+                    self.updateDisplay();
+                });
+
+                return this;
+            },
+
+            updateDisplay: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                if (self.pageWantsFooter) {
+                    $html.removeClass('footer-hidden');
+                } else {
+                    $html.addClass('footer-hidden');
+                }
+
+                return self;
+            }
+        });
+
         var Cover = Segue.Class('Cover', {
             base: Segue.Element,
             init: function () {
@@ -774,7 +812,8 @@ var TSF = (function ($) {
             },
 
             updateDisplay: function () {
-                var self = this;
+                var self = this,
+                    $html = $(self.html());
                 if (self.pageWantsCover && self.hasImages()) {
                     $html.removeClass('jumbotron-hidden');
                 } else {
@@ -945,6 +984,170 @@ var TSF = (function ($) {
                 } else {
                     self._isRendering = false;
                 }
+            }
+        });
+
+        var CategoryPanel = Segue.Class('CategoryPanel', {
+            base: Segue.Element,
+            init: function (categoryObj) {
+                var bindableCategory = {
+                    category: {
+                        id: Segue.bindable(''),
+                        name: Segue.bindable('')    
+                    },
+                    hasItems: Segue.bindable(false)
+                };
+
+                bindableCategory.hasNoItems = Segue.computed(function () {
+                    return !bindableCategory.hasItems();
+                }).subscribeTo(bindableCategory.hasItems);
+
+                Segue.Element.call(this, {
+                    templateNode: $('#category-panel-template').get(0),
+                    model: bindableCategory
+                });
+
+                if (categoryObj) {
+                    this.setCategory(categoryObj);
+                }
+
+                this._isLoaded = false;
+
+                return this;
+            },
+
+            setCategory: function (categoryObj) {
+                this.category = categoryObj;
+                util.updateBindableValues(this.options.model.category, categoryObj);
+                return this;
+            },
+
+            setItems: function (itemObjArr) {
+                var self = this,
+                    $html = $(self.html()),
+                    $grid = $(self.portals['item_list']);
+
+                self.items = itemObjArr;
+                self.options.model.hasItems(self.items.length > 0);
+
+                if (self._isLoaded) {
+                    $.each(self.elements, function (i, o) {
+                        o.dismiss();
+                    })
+                }
+                $grid.isotope('layout');
+
+                self.elements = [];
+                $.each(itemObjArr, function (i, o) {
+                    var itemEntry = new ItemEntry(o);
+                    self.addChildElement(itemEntry);
+                    
+                    itemEntry.isotopeGrid = $grid;
+                    if (self._isLoaded) {
+                        itemEntry.load();
+                    }
+                });
+
+                return self;
+            },
+
+            html: function () {
+                if (this.cachedHtml) {
+                    return this.cachedHtml;
+                }
+
+                var html = Segue.Element.prototype.html.call(this),
+                    self = this;
+
+                // Get Item categories
+                var latestCat = {
+                    id: 'latest',
+                    name: 'Latest Shots'
+                };
+
+                var myShots = {
+                    id: 'myshots',
+                    name: 'My Shots'
+                };
+
+                TSF.getCategories(function (data) {
+                    if (!data['error'] && data instanceof Array) {
+                        var catList = [latestCat, myShots].concat(data);
+                        var $categories = $(self.portals['category_list']);
+                        $.each(catList, function (i, o) {
+                            var aTag = d.createElement('a');
+                            aTag.href = '/pages/category/' + o['id'] + '/';
+                            aTag.text = o['name'];
+
+                            var $liTag = $(d.createElement('li'));
+                            $liTag.append(aTag);
+
+                            if (self.category && self.category.id === o.id) {
+                                $liTag.addClass('active');
+                                $(aTag).on('click', function (evt) {
+                                    evt.preventDefault();
+                                });
+                            } else {
+                                $(aTag).on('click', function (evt) {
+                                    evt.preventDefault();
+                                    PageFactory.loadCategoryPage(o);
+                                });
+                            }
+
+                            $categories.append($liTag);
+
+                            if (1 == i) {
+                                $categories.append($('<li role="separator" class="divider"></li>'));
+                                $categories.append($('<li class="dropdown-header">Categories</li>'));
+                            }
+                        });
+                    }
+                });
+                
+                // initialize isotope for this panel
+                var $grid = $(this.portals['item_list']).isotope({
+                    itemSelector: '.grid-item',
+                    percentPosition: true,
+                    masonry: {
+                        columnWidth: '.grid-sizer'
+                    }
+                });
+
+                return html;
+            },
+
+            dismiss: function () {
+                var self = this,
+                    $html = $(self.html());
+
+                self._isLoaded = false
+
+                $.each(self.elements, function (i, o) {
+                    o.dismiss();
+                });
+
+                $html.stop().fadeOut('slow', function () {
+                    $html.remove();
+                    self.uncacheHtml();
+                });
+                return self;
+            },
+
+            load: function () {
+                var self = this,
+                    $html = $(self.html()),
+                    $grid = $(self.portals['item_list']);
+
+                self.container.append($html);
+                $html.stop().hide().fadeIn('slow', function () {
+                    $grid.isotope('layout');
+                    $.each(self.elements, function (i, o) {
+                        o.isotopeGrid = $grid;
+                        o.load();
+                    });
+                    self._isLoaded = true
+                });
+                return self;
             }
         });
 
@@ -1176,37 +1379,46 @@ var TSF = (function ($) {
             },
 
             setItem: function (itemObj) {
-                var self = this,
-                    $html = $(self.html());
+                var self = this;
 
                 self.item = itemObj;
-                self.photoHasChanged = false;
-                self.isEditing = true;
-                self.modelRef.isNewItem(false);
-
-                $(self.portals['item_title']).val(itemObj.title);
-                $(self.portals['item_category']).val(itemObj.category.id);
-                $(self.portals['item_desc']).val(itemObj.description);
-                $(self.portals['image_drop']).imagedrop('displayImageUrl', itemObj.image_url);
+                self._updateFields();
 
                 return self;
             },
 
             clearItem: function () {
+                var self = this;
+
+                delete self.item;
+                self._updateFields();
+
+                return self;
+            },
+
+            _updateFields: function () {
                 var self = this,
                     $html = $(self.html());
 
-                delete self.item;
-                self.photoHasChanged = false;
-                self.isEditing = false;
-                self.modelRef.isNewItem(true);
+                if (self.item) {
+                    self.photoHasChanged = false;
+                    self.isEditing = true;
+                    self.modelRef.isNewItem(false);
 
-                $(self.portals['item_title']).val('');
-                $(self.portals['item_category']).val('');
-                $(self.portals['item_desc']).val('');
-                $(self.portals['image_drop']).imagedrop('clearFile');
+                    $(self.portals['item_title']).val(self.item.title);
+                    $(self.portals['item_category']).val(self.item.category.id);
+                    $(self.portals['item_desc']).val(self.item.description);
+                    $(self.portals['image_drop']).imagedrop('displayImageUrl', self.item.image_url);
+                } else {
+                    self.photoHasChanged = false;
+                    self.isEditing = false;
+                    self.modelRef.isNewItem(true);
 
-                return self;
+                    $(self.portals['item_title']).val('');
+                    $(self.portals['item_category']).val('');
+                    $(self.portals['item_desc']).val('');
+                    $(self.portals['image_drop']).imagedrop('clearFile');
+                }
             },
 
             html: function () {
@@ -1243,7 +1455,6 @@ var TSF = (function ($) {
                        self.photoHasChanged = true;
                     }
                 });
-
 
                 var _readAndValidate = function () {
                     var title = $(self.portals['item_title']).val().trim(),
@@ -1370,6 +1581,7 @@ var TSF = (function ($) {
                 var self = this,
                     $html = $(self.html());
 
+                self._updateFields();
                 self.container.append($html);
                 $html.stop().hide().slideDown('slow');
                 return self;
@@ -1416,6 +1628,11 @@ var TSF = (function ($) {
                     PageFactory.loadDeleteItemPage(self.item);
                 });
 
+                $(self.portals['category_button']).on('click', function (evt) {
+                    evt.preventDefault();
+                    PageFactory.loadCategoryPage({id: self.item.category.id});
+                });
+
                 return html;
             },
 
@@ -1423,7 +1640,7 @@ var TSF = (function ($) {
                 var self = this,
                     $html = $(self.html());
 
-                $html.stop().hide('slow', function () {
+                $html.stop().slideUp('slow', function () {
                     $html.remove();
                     self.uncacheHtml();
                 });
@@ -1435,7 +1652,7 @@ var TSF = (function ($) {
                     $html = $(self.html());
 
                 self.container.append($html);
-                $html.stop().hide().show('slow');
+                $html.stop().hide().slideDown('slow');
                 return self;
             }
         });
@@ -1523,19 +1740,26 @@ var TSF = (function ($) {
         var PageFactory = function () {
             var cachedPages = {};
 
-            var cachablePage = function (pagekey, creation, beforeReturningCache) {
+            var cachablePage = function (pagetype, creation, beforeReturningCache) {
                 return function () {
-                    if (cachedPages[pagekey]) {
+                    if (cachedPages[pagetype]) {
                         if (beforeReturningCache) {
-                            beforeReturningCache.apply(cachedPages[pagekey], arguments);
+                            beforeReturningCache.apply(cachedPages[pagetype], arguments);
                         }
-                        return cachedPages[pagekey];
+                        return cachedPages[pagetype];
                     }
 
-                    cachedPages[pagekey] = creation.apply(this, arguments);
+                    cachedPages[pagetype] = creation.apply(this, arguments);
 
-                    return cachedPages[pagekey];
+                    return cachedPages[pagetype];
                 };
+            };
+
+            var keyedCachablePage = function (pagetype, creation, beforeReturningCache) {
+                return function (key) {
+                    var pageCreator = cachablePage(pagetype + '_' + key, creation, beforeReturningCache);
+                    return pageCreator.apply(this, Array.prototype.slice.call(arguments, 1));
+                } 
             };
 
             var createMessagePage = cachablePage('messagepage', function (message) {
@@ -1636,7 +1860,7 @@ var TSF = (function ($) {
                     delete uploadP.item;
                     panelEl.clearItem();
                     return uploadP;
-                }
+                };
 
                 uploadP.addChildElement(panelEl);
                 return uploadP
@@ -1678,11 +1902,34 @@ var TSF = (function ($) {
                     itemDeletePage.nonceToken = token;
                     deletePanel.setNonceToken(token);
                     return itemDeletePage;
-                },
+                };
 
                 itemDeletePage.addChildElement(deletePanel);
 
                 return itemDeletePage;
+            });
+
+            var createCategoryPage = keyedCachablePage('categorypage', function () {
+                var categoryPage = new SPage('Category Page');
+                categoryPage.navbar = 'shrink';
+                categoryPage.showCover = false;
+                categoryPage.hideFooter = true;
+
+                var categoryPanel = new CategoryPanel();
+
+                categoryPage.setCategory = function (categoryObj) {
+                    this.category = categoryObj;
+                    categoryPanel.setCategory(categoryObj);
+                };
+
+                categoryPage.setItems = function (itemObjArr) {
+                    this.items = itemObjArr;
+                    categoryPanel.setItems(itemObjArr);
+                };
+
+                categoryPage.addChildElement(categoryPanel);
+
+                return categoryPage;
             });
 
             var pageLoaders = {
@@ -1841,6 +2088,26 @@ var TSF = (function ($) {
                             }
                         });
                     }
+                },
+
+                categorypage: function (pageData) {
+                    TSF.getCategoryItems(pageData.id, function (data) {
+                        if (data && !data['error']) {
+                            var categoryPage = createCategoryPage(pageData.id);
+                            categoryPage.setCategory(data['category']);
+                            categoryPage.setItems(data['items']);
+                            Segue.loadPage(categoryPage, '/pages/category/' + data['category']['id'] + '/');
+                        } else {
+                            var errCode = (data['error']) ? data['error']['code'] : -1,
+                                defaultErrMsg = 'An error occurred. Please try again later.',
+                                errDesc = (data['error']) ? data['error']['description'] || defaultErrMsg : defaultErrMsg;
+                            if (404 === errCode) {
+                                Segue.loadPage(createMessagePage('Category not found.'), '/pages/category/' + pageData.id + '/');
+                            } else {
+                                Segue.loadPage(createMessagePage(errDesc), '/pages/category/' + pageData.id + '/');
+                            }
+                        }
+                    });
                 }
             };
 
@@ -1874,6 +2141,10 @@ var TSF = (function ($) {
 
                 loadHomePage: function () {
                     pageLoaders['homepage']();
+                },
+
+                loadCategoryPage: function (categoryInfo) {
+                    pageLoaders['categorypage'](categoryInfo);
                 },
 
                 loadLoginPage: function () {
@@ -1931,6 +2202,9 @@ var TSF = (function ($) {
         navBar.setActionFor('upload', function () {
             PageFactory.loadUploadPage();
         });
+
+        // Setup footer
+        var footer = new Footer();
 
         // Get Current user
         TSF.getSignedInUser(function (user) {

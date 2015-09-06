@@ -95,9 +95,64 @@ textarea {
    Author's custom styles
    ========================================================================== */
 
+#entire-page-wrapper {
+    min-height: 100vh;
+    height: auto !important;
+    /*height: 100vh;*/
+    /* Negative indent footer by its height */
+    margin: 0 auto -40px;
+    /* Pad bottom by footer height */
+    padding: 0 0 40px;
+}
+
+.view-port-max {
+    width: 100%;
+    overflow: auto;
+    /* Offset navbar height and footer height*/
+    height: -webkit-calc(100vh - 90px);
+    height:    -moz-calc(100vh - 90px);
+    height:         calc(100vh - 90px);
+
+    -webkit-transform-style: preserve-3d;
+       -moz-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+}
+
+.view-port-center {
+    display: inline-block;
+    position: relative;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+       -moz-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+}
+
+/************************ Footer ************************/
+#page-footer {
+    height: 40px;
+    background-color: #F5F5F5;
+    overflow: hidden;
+    -webkit-transition: all 0.5s ease-in-out;
+       -moz-transition: all 0.5s ease-in-out;
+         -o-transition: all 0.5s ease-in-out;
+            transition: all 0.5s ease-in-out;
+}
+
+#page-footer.footer-hidden {
+    opacity: 0;
+}
+
+#page-footer > .container {
+    padding-top: 12px;
+}
+
+/************************ END: Footer ************************/
+
 
 /************************ Body ************************/
 #body-content {
+    position: relative;
     width: 100%;
 }
 /************************ END: Body ************************/
@@ -257,17 +312,7 @@ textarea {
     opacity: 1;
 }
 
-/*.navbar-grow ul > li{
-    padding-top: 20px;
-}*/
-
-
-
-
 /************************ END: Navigation Bar ************************/
-
-
-
 
 /************************ Cover ************************/
 .jumbotron {
@@ -275,6 +320,7 @@ textarea {
     padding: 0px;
     height: 70vh;
     min-height: 300px;
+    margin-bottom: 0px;
 
     -webkit-transition: all 1s ease-in-out;
        -moz-transition: all 1s ease-in-out;
@@ -284,7 +330,9 @@ textarea {
 
 .jumbotron-hidden {
     min-height: 0px;
-    height: 30px;
+    height: 0px;
+    /* Offset margin bottom to navbar height */
+    margin-bottom: 50px;
     -webkit-transform: translateY(-30px);
        -moz-transform: translateY(-30px);
          -o-transform: translateY(-30px);
@@ -370,6 +418,57 @@ textarea {
 }
 /************************ END: Cover ************************/
 
+/************************ Category Panel ************************/
+.category-panel {
+    position: absolute;
+    width: 100%;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.category-panel .category-heading {
+    border-style: solid;
+    border-color: #FF5208;
+    border-width: 0px 0px 1px 0px;
+    padding: 1px;
+}
+
+.category-panel .btn-heading {
+    background: transparent;
+    font-weight: bold;
+    font-size: 26px;
+    color: #FF5208;
+    padding: 0px;
+    
+}
+
+.category-panel .btn-tool {
+   float: right;
+   padding-top: 7px;
+}
+
+.category-panel .btn-tool:hover {
+    opacity: 0.8;
+}
+
+.category-panel .dropdown-menu > li > a:focus,
+.category-panel .dropdown-menu > li > a:hover {
+    background-color: #FFD3C1;
+}
+
+.category-panel .dropdown-menu > .active > a, 
+.category-panel .dropdown-menu > .active > a:focus,
+.category-panel .dropdown-menu > .active > a:hover {
+    background-color: #FF8B5A;
+}
+
+.category-panel .no-items {
+    text-align: center;
+    padding: 60px;
+    color: #FF8B5A;
+    font-size: 20px;
+}
+/************************ END: Category Panel ************************/
 
 /************************ Panel ************************/
 .rotate-90 {
@@ -392,7 +491,7 @@ textarea {
 }
 
 .panel-heading .btn-tool {
-    position: relative;
+    position: inline-block;
     float: right;
 }
 
@@ -518,28 +617,6 @@ textarea {
 
 
 /************************ Login Panel ************************/
-.view-port-max {
-    width: 100%;
-    overflow: auto;
-    height: -webkit-calc(100vh - 130px);
-    height:    -moz-calc(100vh - 130px);
-    height:         calc(100vh - 130px);
-
-    -webkit-transform-style: preserve-3d;
-       -moz-transform-style: preserve-3d;
-            transform-style: preserve-3d;
-}
-
-.view-port-center {
-    display: inline-block;
-    position: relative;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-       -moz-transform: translate(-50%, -50%);
-            transform: translate(-50%, -50%);
-}
-
 .shadowed-box {
     padding: 60px 60px 60px 60px;
     border-radius: 10px;
@@ -678,7 +755,8 @@ textarea {
 .image-drop-container {
     position: relative;
     width: 100%;
-    height: 50vh;
+    height: 60vh;
+    margin-top: 10px;
 }
 
 .image-drop-container .image-drop-overlay {
@@ -754,6 +832,13 @@ textarea {
 /************************ END: Upload Panel ************************/
 
 /************************ Item View Panel ************************/
+
+.item-view-panel {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    overflow: hidden;
+}
+
 .itm-v-img {
     background-color: #4C4C4C;
     padding: 0px;
@@ -827,9 +912,9 @@ textarea {
 @media (min-width: 768px) {
     .itm-v-img,
     .itm-v-detail {
-        height: -webkit-calc(100vh - 130px);
-        height:    -moz-calc(100vh - 130px);
-        height:         calc(100vh - 130px);
+        height: -webkit-calc(100vh - 110px);
+        height:    -moz-calc(100vh - 110px);
+        height:         calc(100vh - 110px);
     }
 
     .itm-v-img img {

@@ -40,7 +40,6 @@ def index():
     '''Test route'''
     return {'pagetype': 'homepage'}
 
-
 @pages.route('/login/', methods=['GET'])
 @util.smart_request
 def login():
@@ -76,6 +75,12 @@ def edit_item(item_id):
 def delete_item(item_id):
     '''Test route'''
     return {'pagetype': 'deleteitempage', 'id': item_id}
+
+@pages.route('/category/<int:category_id>/', methods=['GET'])
+@util.smart_request
+def view_category(category_id):
+    '''Test route'''
+    return {'pagetype': 'categorypage', 'id': category_id}
 
 # TODO: Remove this function
 @pages.route('/uploadxxx/')

@@ -104,9 +104,11 @@ def get_item_by_id(item_id):
 def get_item_with_id_salt_type_or_404(item_id, salt, image_type):
     return Item.query.filter_by(id=item_id, salt=salt, image_type=image_type).first_or_404()
 
-def get_latest_items(limit=8, page=0):
-    return Item.query.order_by(Item.date_created.desc()).limit(limit).offset(page)
+def get_latest_items(limit=8, offset=0):
+    return Item.query.order_by(Item.date_created.desc()).offset(offset).limit(limit)
 
-def get_items_for_category(category_id, limit=8, page=0):
-    return Item.query.filter_by(category_id=category_id).order_by(Item.date_created.desc()).limit(limit).offset(page)
+def get_items_for_category(category_id, limit=8, offset=0):
+    return Item.query.filter_by(category_id=category_id).order_by(Item.date_created.desc()).limit(limit).offset(offset)
 
+def get_all_items_for_category(category_id):
+    return Item.query.filter_by(category_id=category_id).order_by(Item.date_created.desc()).all()

@@ -23,76 +23,80 @@
         <![endif]-->
 
         <!-- Add your site or application content here -->
-        <nav class="navbar navbar-default navbar-fixed-top navbar-grow" id="page-nav-bar">
-            <div class="container">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#ts-navbar-collapse" aria-expanded="false">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
+        <div id="entire-page-wrapper">
+          <nav class="navbar navbar-default navbar-fixed-top navbar-grow" id="page-nav-bar">
+              <div class="container">
+                  <div class="navbar-header">
+                      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#ts-navbar-collapse" aria-expanded="false">
+                          <span class="sr-only">Toggle navigation</span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                          <span class="icon-bar"></span>
+                      </button>
 
-                    <a class="navbar-brand" href="#">
-                        <img alt="Travel Shot" src="{{ url_for('static', filename='images/travelshot-logo.png') }}">
-                        <img alt="Travel Shot" src="{{ url_for('static', filename='images/travelshot-logo_2.png') }}">
-                    </a>
-                </div>
+                      <a class="navbar-brand" href="#">
+                          <img alt="Travel Shot" src="{{ url_for('static', filename='images/travelshot-logo.png') }}">
+                          <img alt="Travel Shot" src="{{ url_for('static', filename='images/travelshot-logo_2.png') }}">
+                      </a>
+                  </div>
 
-                <div class="collapse navbar-collapse" id="ts-navbar-collapse">
-                    <ul class="nav navbar-nav navbar-right" data-sg-portal="login_group">
-                        <li data-sg-portal="upload_button" class="hidden">
-                          <a href="{{ url_for('pages.new_item') }}" class="nav-a-btn btn-upload nav-a-btn-hidden">Share a Sh[&ofcir;]t</a>
-                        </li>
-                        <li data-sg-portal="login_button" class="hidden">
-                          <a href="{{ url_for('pages.login') }}" class="nav-a-btn btn-signin nav-a-btn-hidden">Sign in</a>
-                        </li>
-                        <li data-sg-portal="user_button" class="dropdown hidden">
-                          <a href="javascript:void(0);" class="dropdown-toggle btn-user nav-a-btn-hidden" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                            {$ name $}
-                            <span class="caret"></span>
-                            <div class="user-img">
-                              <img class="img-circle" data-sg-attr-bind="src: photo" />
-                            </div>
-                          </a>
-                          <ul class="dropdown-menu">
-                            <li><a href="javascript:void(0);">My Sh&lsqb;&xodot;&rsqb;s</a></li>
-                            <li role="separator" class="divider"></li>
-                            <li data-sg-portal="logout_button"><a href="{{ url_for('pages.logout') }}">Sign out</a></li>
-                          </ul>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+                  <div class="collapse navbar-collapse" id="ts-navbar-collapse">
+                      <ul class="nav navbar-nav navbar-right" data-sg-portal="login_group">
+                          <li data-sg-portal="upload_button" class="hidden">
+                            <a href="{{ url_for('pages.new_item') }}" class="nav-a-btn btn-upload nav-a-btn-hidden">Share a Sh[&ofcir;]t</a>
+                          </li>
+                          <li data-sg-portal="login_button" class="hidden">
+                            <a href="{{ url_for('pages.login') }}" class="nav-a-btn btn-signin nav-a-btn-hidden">Sign in</a>
+                          </li>
+                          <li data-sg-portal="user_button" class="dropdown hidden">
+                            <a href="javascript:void(0);" class="dropdown-toggle btn-user nav-a-btn-hidden" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                              {$ name $}
+                              <span class="caret"></span>
+                              <div class="user-img">
+                                <img class="img-circle" data-sg-attr-bind="src: photo" />
+                              </div>
+                            </a>
+                            <ul class="dropdown-menu">
+                              <li><a href="javascript:void(0);">My Sh&lsqb;&xodot;&rsqb;s</a></li>
+                              <li role="separator" class="divider"></li>
+                              <li data-sg-portal="logout_button"><a href="{{ url_for('pages.logout') }}">Sign out</a></li>
+                            </ul>
+                          </li>
+                      </ul>
+                  </div>
+              </div>
+          </nav>
 
-        <!-- Cover -->
-        <div class="jumbotron jumbotron-hidden" id="page-cover">
-            <div class="container">
-                <div class="featured_shots">
-                    <div class="slideshow"></div>
-                </div>
-                <div class="fronter">
-                    <h1>Travel Sh[&ofcir;]t</h1>
-                    <h3>See the world through the eyes of a local.</h3>
-                </div>
-            </div>
-        </div>
-
-        <!-- Body Content -->
-        <div class="container">
-          <div id="body-content">
-            <div class="view-port-max">
-              <div class="view-port-center">
-                <img src="{{ url_for('static', filename='images/loading.gif') }}">
+          <!-- Cover -->
+          <div class="jumbotron jumbotron-hidden" id="page-cover">
+              <div class="container">
+                  <div class="featured_shots">
+                      <div class="slideshow"></div>
+                  </div>
+                  <div class="fronter">
+                      <h1>Travel Sh[&ofcir;]t</h1>
+                      <h3>See the world through the eyes of a local.</h3>
+                  </div>
               </div>
           </div>
+
+          <!-- Body Content -->
+          <div class="container">
+            <div id="body-content">
+              <div class="view-port-max">
+                <div class="view-port-center">
+                  <img src="{{ url_for('static', filename='images/loading.gif') }}">
+                </div>
+              </div>
+            </div>
+          </div> <!-- /container -->
+        </div> <!-- /entire-page-wrapper -->
+
+        <div id="page-footer">
+          <div class="container">
+            <p class="text-muted credit">&copy; Travel Shot 2015</p>
           </div>
-          <hr>
-          <footer class="page-footer">
-              <p>&copy; Travel Shot 2015</p>
-          </footer>
-        </div> <!-- /container -->
+        </div> 
 
         <!-- Modal message box -->
         <div class="modal fade" id="alert-box">
@@ -119,14 +123,37 @@
         <template id="panel-template">
             <div class="panel panel-default">
               <div class="panel-heading">
-                    <h2>{$ name $} <small>See more <span class="glyphicon glyphicon-plane rotate-90" aria-hidden="true"></span> </small><a class="btn-tool" href="javascript:void(0);"><img src="{{ url_for('static', filename='images/rss_button.png') }}"></a></h2>
+                  <h2>{$ name $} <small>See more <span class="glyphicon glyphicon-plane rotate-90" aria-hidden="true"></span> </small><a class="btn-tool" href="javascript:void(0);"><img src="{{ url_for('static', filename='images/rss_button.png') }}"></a></h2>
+              </div>
+              <div class="panel-body">
+                <div class="grid" data-sg-portal="item_list">
+                    <div class="grid-sizer"></div>
                 </div>
-                <div class="panel-body">
-                  <div class="grid" data-sg-portal="item_list">
-                      <div class="grid-sizer"></div>
-                  </div>
-                </div>
+              </div>
             </div>
+        </template>
+
+        <template id="category-panel-template">
+          <div class="category-panel">
+            <div class="category-heading">
+              <span class="dropdown">
+                <button class="btn btn-heading dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    {$ category.name $}
+                    <span class="caret"></span>
+                </button>
+                <ul data-sg-portal="category_list" class="dropdown-menu"></ul>
+              </span>
+              <a class="btn-tool" href="javascript:void(0);"><img src="{{ url_for('static', filename='images/rss_button.png') }}"></a>
+            </div>
+            <div class="category-body">
+              <div data-sg-portal="item_list" data-sg-hide="hasNoItems" class="grid">
+                 <div class="grid-sizer"></div>
+              </div>
+              <div data-sg-hide="hasItems" class="no-items">
+                Nothing to see here
+              </div>
+            </div>
+          </div>
         </template>
 
         <template id="grid-item-template">
@@ -225,7 +252,7 @@
         </template>
 
         <template id="item-view-panel-template">
-          <div class="row">
+          <div class="row item-view-panel">
             <div class="col-xs-12 col-sm-9 itm-v-img">
               <img data-sg-attr-bind="src: image_url">
             </div>
@@ -247,7 +274,7 @@
                   </a>
                 </div>
               </div>
-              <a href="#"><h5>{$ category.name $} <small>See more</small></h5></a>
+              <a data-sg-portal="category_button" href="{$ categoryUrl $}"><h5>{$ category.name $} <small>See more</small></h5></a>
               <h4>{$ title $} <small>{$ displayDate $}</small></h4>
               <p>{$ description $}</p>
             </div>
