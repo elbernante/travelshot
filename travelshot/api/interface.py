@@ -57,7 +57,6 @@ def serialize_item_object(itemObj):
 
     return item_dict
 
-
 @api.route('/featured/', methods=['GET'])
 @util.format_response
 def featured_images():
@@ -68,6 +67,26 @@ def featured_images():
     ]
     return images
 
+@api.route('/myitems/', methods=['GET'])
+@util.csrf_protect_enable
+@util.require_login
+@util.format_response
+def my_items():
+    res = ds.get_items_by_author(login_session['user_id'])
+    items = []
+    for i in res:
+        items.append(serialize_item_object(i))
+    return items
+
+@api.route('/items/latest/', methods=['GET'])
+@util.format_response
+def get_latest_items():
+    res = ds.get_latest_items()
+    items = []
+    for v in res:
+        items.append(serialize_item_object(v))
+    return items
+
 @api.route('/categories/', methods=['GET'])
 @util.format_response
 def get_categories():
@@ -77,9 +96,9 @@ def get_categories():
         cats.append(v.serialize)
     return cats
 
-@api.route('/category/<int:category_id>/', methods=['GET'])
+@api.route('/category/<int:category_id>/items/', methods=['GET'])
 @util.format_response
-def get_category(category_id):
+def get_category_items(category_id):
     category = ds.get_category_by_id(category_id)
     if category is None:
         raise NotFound('Category not found.')
@@ -94,19 +113,11 @@ def get_category(category_id):
         'items': items
     }
 
+# TODO: Remove this
 @api.route('/items/<int:category_id>/', methods=['GET'])
 @util.format_response
 def get_items_for_category(category_id):
     res = ds.get_items_for_category(category_id)
-    items = []
-    for v in res:
-        items.append(serialize_item_object(v))
-    return items
-
-@api.route('/items/latest/', methods=['GET'])
-@util.format_response
-def get_latest_items():
-    res = ds.get_latest_items()
     items = []
     for v in res:
         items.append(serialize_item_object(v))

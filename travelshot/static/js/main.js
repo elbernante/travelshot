@@ -412,12 +412,21 @@ var TSF = (function ($) {
              util.simpleGet('/api/categories/', callback);
         },
 
+        // TODO: remove this function
         getItemsForCat: function (catId, callback) {
             util.simpleGet('/api/items/' + catId + '/', callback);
         },
 
         getCategoryItems: function (catId, callback) {
-            util.simpleGet('/api/category/' + catId + '/', callback);
+            util.simpleGet('/api/category/' + catId + '/items/', callback);
+        },
+
+        getLatestItems: function (callback) {
+            util.simpleGet('/api/items/latest/', callback);
+        },
+
+        getMyItems: function (callback) {
+            util.simpleGet('/api/myitems/', callback, true);
         },
 
         newItem: function (itemObj, callbacks) {
@@ -511,7 +520,7 @@ var TSF = (function ($) {
                     }, bindableItem).subscribeTo(bindableItem.author.id);
 
                     bindableItem['categoryUrl'] = Segue.computed(function () {
-                        return '/pages/category/' + bindableItem.category.id() + '/';
+                        return '/pages/category/' + bindableItem.category.id() + '/items/';
                     }, bindableItem).subscribeTo(bindableItem.category.id);
 
                     bindableItem['editUrl'] = Segue.computed(function () {
@@ -580,6 +589,7 @@ var TSF = (function ($) {
                 setBtnAct(self.portals['upload_button'], 'upload');
                 setBtnAct(self.portals['login_button'], 'login');
                 setBtnAct(self.portals['logout_button'], 'logout');
+                setBtnAct(self.portals['my_shots_button'], 'myshots');
 
                 Segue.on('pageLoad', function (pageObj) {
                     self._udateBtnsWithPage(pageObj);
@@ -1057,49 +1067,51 @@ var TSF = (function ($) {
                 }
 
                 var html = Segue.Element.prototype.html.call(this),
-                    self = this;
+                    self = this,
+                    $categories = $(self.portals['category_list']);;
+
+                var appendItemToList = function (category_id, text, url, action) {
+                    var aTag = d.createElement('a');
+                    aTag.href = url;
+                    aTag.text = text;
+
+                    var $liTag = $(d.createElement('li'));
+                    $liTag.append(aTag);
+
+                    if (self.category && self.category.id === category_id) {
+                        $liTag.addClass('active');
+                        $(aTag).on('click', function (evt) {
+                            evt.preventDefault();
+                        });
+                    } else {
+                        $(aTag).on('click', function (evt) {
+                            evt.preventDefault();
+                            action();
+                        });
+                    }
+
+                    $categories.append($liTag);
+                };
+
+                appendItemToList('latestitems', 'Latest Shots', '/pages/latestitems/', function () {
+                    PageFactory.loadLatestItemsPage();
+                });
+
+                appendItemToList('myitems', 'My Shots', '/pages/myitems/', function () {
+                    PageFactory.loadMyItemsPage();
+                });
+
+                $categories.append($('<li role="separator" class="divider"></li>'));
+                $categories.append($('<li class="dropdown-header">Categories</li>'));
 
                 // Get Item categories
-                var latestCat = {
-                    id: 'latest',
-                    name: 'Latest Shots'
-                };
-
-                var myShots = {
-                    id: 'myshots',
-                    name: 'My Shots'
-                };
-
                 TSF.getCategories(function (data) {
                     if (!data['error'] && data instanceof Array) {
-                        var catList = [latestCat, myShots].concat(data);
-                        var $categories = $(self.portals['category_list']);
-                        $.each(catList, function (i, o) {
-                            var aTag = d.createElement('a');
-                            aTag.href = '/pages/category/' + o['id'] + '/';
-                            aTag.text = o['name'];
-
-                            var $liTag = $(d.createElement('li'));
-                            $liTag.append(aTag);
-
-                            if (self.category && self.category.id === o.id) {
-                                $liTag.addClass('active');
-                                $(aTag).on('click', function (evt) {
-                                    evt.preventDefault();
-                                });
-                            } else {
-                                $(aTag).on('click', function (evt) {
-                                    evt.preventDefault();
-                                    PageFactory.loadCategoryPage(o);
-                                });
-                            }
-
-                            $categories.append($liTag);
-
-                            if (1 == i) {
-                                $categories.append($('<li role="separator" class="divider"></li>'));
-                                $categories.append($('<li class="dropdown-header">Categories</li>'));
-                            }
+                        $.each(data, function (i, o) {
+                            var url =  '/pages/category/' + o['id'] + '/items/'
+                            appendItemToList(o['id'], o['name'], url, function () {
+                                PageFactory.loadCategoryPage(o);
+                            });
                         });
                     }
                 });
@@ -2096,16 +2108,69 @@ var TSF = (function ($) {
                             var categoryPage = createCategoryPage(pageData.id);
                             categoryPage.setCategory(data['category']);
                             categoryPage.setItems(data['items']);
-                            Segue.loadPage(categoryPage, '/pages/category/' + data['category']['id'] + '/');
+                            Segue.loadPage(categoryPage, '/pages/category/' + data['category']['id'] + '/items/');
                         } else {
                             var errCode = (data['error']) ? data['error']['code'] : -1,
                                 defaultErrMsg = 'An error occurred. Please try again later.',
                                 errDesc = (data['error']) ? data['error']['description'] || defaultErrMsg : defaultErrMsg;
                             if (404 === errCode) {
-                                Segue.loadPage(createMessagePage('Category not found.'), '/pages/category/' + pageData.id + '/');
+                                Segue.loadPage(createMessagePage('Category not found.'), '/pages/category/' + pageData.id + '/items/');
                             } else {
-                                Segue.loadPage(createMessagePage(errDesc), '/pages/category/' + pageData.id + '/');
+                                Segue.loadPage(createMessagePage(errDesc), '/pages/category/' + pageData.id + '/items/');
                             }
+                        }
+                    });
+                },
+
+                myitemspage: function (pageData) {
+                    var doLoadMyItems = function () {
+                        TSF.getMyItems(function (data) {
+                            if (data && !data['error']) {
+                                var categoryObj = {
+                                    id: 'myitems',
+                                    name: 'My Shots'
+                                };
+
+                                var myItemsPage = createCategoryPage(categoryObj.id);
+                                myItemsPage.requireLogin = true;
+                                myItemsPage.setCategory(categoryObj);
+                                myItemsPage.setItems(data);
+                                Segue.loadPage(myItemsPage, '/pages/myitems/');
+                            } else {
+                                Segue.loadPage(createMessagePage('An error occurred. Please try again later.'), '/pages/myitems/');
+                            }
+                        });
+                        
+                    };
+
+                    TSF.hasActiveUser(function (isSignedIn) {
+                        if (isSignedIn) {
+                            doLoadMyItems();
+                        } else {
+                            var loginPage = createLoginPage();
+                            loginPage.next = function () {
+                                doLoadMyItems();
+                            };
+                            Segue.loadPage(loginPage, '/pages/login/');
+                            util.flashMessage('Sign in to view your shots.');
+                        }
+                    });
+                },
+
+                latestitemspage: function (pageData) {
+                    TSF.getLatestItems(function (data) {
+                        if (data && !data['error']) {
+                            var categoryObj = {
+                                id: 'latestitems',
+                                name: 'Latest Shots'
+                            };
+
+                            var latestItemsPage = createCategoryPage(categoryObj.id);
+                            latestItemsPage.setCategory(categoryObj);
+                            latestItemsPage.setItems(data);
+                            Segue.loadPage(latestItemsPage, '/pages/latesitems/');
+                        } else {
+                            Segue.loadPage(createMessagePage('An error occurred. Please try again later.'), '/pages/latesitems/');
                         }
                     });
                 }
@@ -2141,6 +2206,14 @@ var TSF = (function ($) {
 
                 loadHomePage: function () {
                     pageLoaders['homepage']();
+                },
+
+                loadLatestItemsPage: function () {
+                    pageLoaders['latestitemspage']();
+                },
+
+                loadMyItemsPage: function () {
+                    pageLoaders['myitemspage']();
                 },
 
                 loadCategoryPage: function (categoryInfo) {
@@ -2203,6 +2276,10 @@ var TSF = (function ($) {
             PageFactory.loadUploadPage();
         });
 
+        navBar.setActionFor('myshots', function () {
+            PageFactory.loadMyItemsPage();
+        });
+
         // Setup footer
         var footer = new Footer();
 
@@ -2247,5 +2324,3 @@ var TSF = (function ($) {
 
     });
 })(window, document, jQuery);
-
-

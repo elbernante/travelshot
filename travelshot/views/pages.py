@@ -76,7 +76,19 @@ def delete_item(item_id):
     '''Test route'''
     return {'pagetype': 'deleteitempage', 'id': item_id}
 
-@pages.route('/category/<int:category_id>/', methods=['GET'])
+@pages.route('/myitems/', methods=['GET'])
+@util.smart_request
+def view_my_items():
+    '''Test route'''
+    return {'pagetype': 'myitemspage'}
+
+@pages.route('/latesitems/', methods=['GET'])
+@util.smart_request
+def view_latest_items():
+    '''Test route'''
+    return {'pagetype': 'latestitemspage'}
+
+@pages.route('/category/<int:category_id>/items/', methods=['GET'])
 @util.smart_request
 def view_category(category_id):
     '''Test route'''
