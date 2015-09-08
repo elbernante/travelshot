@@ -471,6 +471,39 @@ textarea {
     color: #FF8B5A;
     font-size: 20px;
 }
+
+.category-panel .category-footer {
+    text-align: center;
+}
+
+.category-panel .category-footer ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0px 20px 0px;
+    display: inline-block;
+    font-size: 0;
+}
+
+.category-panel .category-footer ul > li {
+    display: inline-block;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.category-panel .category-footer ul > li a {
+    color: #FF8B5A;
+}
+
+.category-panel .category-footer ul > li a:hover {
+    color: #FF5208;
+}
+
+.category-panel .category-footer ul > li:not(:last-of-type):after {
+    content: '·';
+    padding-right: 6px;
+    padding-left: 6px;
+}
+
 /************************ END: Category Panel ************************/
 
 /************************ Panel ************************/

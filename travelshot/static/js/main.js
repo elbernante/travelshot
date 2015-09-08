@@ -35,7 +35,9 @@ var TSF = (function ($) {
                         _utils.errorHanlder(jqXHR, textStatus, errorThrown, funcCallback);
                     }
                 });
-            }
+            },
+
+            _categoriesCache: false
         };
 
         return _utils;
@@ -409,7 +411,23 @@ var TSF = (function ($) {
         },
 
         getCategories: function (callback) {
-             util.simpleGet('/api/categories/', callback);
+            var callbackwrapper = function (data) {
+                if (data && !data['error']) {
+                    util._categoriesCache = data ;
+                }
+
+                if ('function' === typeof callback) {
+                    callback(data);
+                }
+            };
+
+            if (util._categoriesCache) {
+                if ('function' === typeof callback) {
+                    callback(util._categoriesCache);
+                }
+            } else {
+                util.simpleGet('/api/categories/', callbackwrapper);
+            }
         },
 
         // TODO: remove this function
@@ -1070,33 +1088,43 @@ var TSF = (function ($) {
 
                 var html = Segue.Element.prototype.html.call(this),
                     self = this,
-                    $categories = $(self.portals['category_list']);;
+                    $categories = $(self.portals['category_list']),
+                    $footer = $(self.portals['category_footer']);
 
                 if (!self.absolutify) {
                     $(html).filter('div.category-panel').removeClass('category-panel-absolute');
                 }
 
-                var appendItemToList = function (category_id, text, url, action) {
-                    var aTag = d.createElement('a');
-                    aTag.href = url;
-                    aTag.text = text;
-
-                    var $liTag = $(d.createElement('li'));
-                    $liTag.append(aTag);
-
-                    if (self.category && self.category.id === category_id) {
-                        $liTag.addClass('active');
-                        $(aTag).on('click', function (evt) {
-                            evt.preventDefault();
-                        });
-                    } else {
-                        $(aTag).on('click', function (evt) {
+                var appendItemToList = function (category_id, text, url, action, addToFooter) {
+                    var createAnchor = function () {
+                        var anchorTag = d.createElement('a');
+                        anchorTag.href = url;
+                        anchorTag.text = text;
+                        $(anchorTag).on('click', function (evt) {
                             evt.preventDefault();
                             action();
                         });
-                    }
+                        return anchorTag;
+                    };
 
-                    $categories.append($liTag);
+                    var createListTag = function (setActive) {
+                        var $listTag = $(d.createElement('li'));
+                        $listTag.append(createAnchor());
+                        if (setActive) {
+                            if (self.category && self.category.id === category_id) {
+                                $listTag.addClass('active');
+                            }
+                        }
+                        return $listTag;
+                    };
+
+                    // Menu item
+                    $categories.append(createListTag(true));
+
+                    // Footer item
+                    if (addToFooter) {
+                        $footer.find('ul').append(createListTag(false));
+                    }
                 };
 
                 appendItemToList('latestitems', 'Latest Shots', '/pages/latestitems/', function () {
@@ -1117,7 +1145,7 @@ var TSF = (function ($) {
                             var url =  '/pages/category/' + o['id'] + '/items/'
                             appendItemToList(o['id'], o['name'], url, function () {
                                 PageFactory.loadCategoryPage(o);
-                            });
+                            }, true);
                         });
                     }
                 });
@@ -1981,37 +2009,6 @@ var TSF = (function ($) {
                             Segue.loadPage(createMessagePage('An error occurred. Please try again later.'), '/');
                         }
                     });
-
-                    // var homePage = new SPage('Home Page');
-                    // homePage.showCover = true;
-
-                    // var _getItems = function (panelObj, id) {
-                    //     TSF.getItemsForCat(id, function (data) {
-                    //         if (!data['error'] && data instanceof Array) {
-                    //             $.each(data, function (itemI, itemO) {
-                    //                 panelObj.newItemArrived(new ItemEntry(itemO));
-                    //             });
-                    //         }
-                    //     });
-                    // };
-
-                    // var latestPanel = {
-                    //     id: 'latest',
-                    //     name: 'Latest Shots'
-                    // };
-
-                    // var pnlObj = new Panel(latestPanel);
-                    // homePage.addChildElement(pnlObj);
-                    // _getItems(pnlObj, latestPanel.id);
-
-                    // TSF.getCategories(function (categories) {
-                    //     $.each(categories, function (i, o) {
-                    //         var panelObj = new Panel(o);
-                    //         homePage.addChildElement(panelObj);
-                    //         _getItems(panelObj, o['id']);
-                    //     });
-                    //     Segue.loadPage(homePage, '/');
-                    // });
                 },
 
                 loginpage: function (pageData) {
@@ -2030,16 +2027,24 @@ var TSF = (function ($) {
                     Segue.loadPage(uploadpage, '/pages/item/new/');
                 },
 
-                viewitempage: function (pageData) {
-                    TSF.getItem(pageData.id, function (itemObj) {
-                        if (itemObj && !itemObj['error']) {
-                            var viPage = createItemViewPage();
-                            viPage.setItem(itemObj);
-                            Segue.loadPage(viPage, '/pages/item/' + itemObj.id + '/');
-                        } else {
-                            Segue.loadPage(createMessagePage('Item not found.'), '/pages/item/' + pageData.id + '/');
-                        }
-                    });
+                viewitempage: function (pageData, item) {
+                    var doLoadViewItemPage = function (itemObj) {
+                        var viPage = createItemViewPage();
+                        viPage.setItem(itemObj);
+                        Segue.loadPage(viPage, '/pages/item/' + itemObj.id + '/');
+                    };
+
+                    if (item) {
+                        doLoadViewItemPage(item);
+                    } else {
+                        TSF.getItem(pageData.id, function (itemObj) {
+                            if (itemObj && !itemObj['error']) {
+                                doLoadViewItemPage(itemObj);
+                            } else {
+                                Segue.loadPage(createMessagePage('Item not found.'), '/pages/item/' + pageData.id + '/');
+                            }
+                        });
+                    }
                 },
 
                 edititempage: function (pageData, item) {
@@ -2240,6 +2245,21 @@ var TSF = (function ($) {
                     }
                 },
 
+                loadLoginPage: function () {
+                    var curPage = Segue['storybook']['currentPage'],
+                        loginPage = createLoginPage();
+
+                    loginPage.next = (curPage
+                        && !curPage.isLogoutPage
+                        && !curPage.isLoginPage
+                        && curPage !== loginPage) ?
+                            curPage : false;
+
+                    loginPage.nextUrl = d.location.pathname;
+
+                    Segue.loadPage(loginPage, '/pages/login/');
+                },
+
                 loadHomePage: function () {
                     pageLoaders['homepage']();
                 },
@@ -2256,21 +2276,6 @@ var TSF = (function ($) {
                     pageLoaders['categorypage'](categoryInfo);
                 },
 
-                loadLoginPage: function () {
-                    var curPage = Segue['storybook']['currentPage'],
-                        loginPage = createLoginPage();
-
-                    loginPage.next = (curPage
-                        && !curPage.isLogoutPage
-                        && !curPage.isLoginPage
-                        && curPage !== loginPage) ?
-                            curPage : false;
-
-                    loginPage.nextUrl = d.location.pathname;
-
-                    Segue.loadPage(loginPage, '/pages/login/');
-                },
-
                 loadLogoutPage: function () {
                     pageLoaders['logoutpage']();
                 },
@@ -2280,9 +2285,7 @@ var TSF = (function ($) {
                 },
 
                 loadViewItemPage: function (itemObj) {
-                    var viPage = createItemViewPage();
-                    viPage.setItem(itemObj);
-                    Segue.loadPage(viPage, '/pages/item/' + itemObj.id + '/')
+                    pageLoaders['viewitempage']({}, itemObj);
                 },
 
                 loadEditItemPage: function (itemObj) {
@@ -2330,7 +2333,7 @@ var TSF = (function ($) {
             }
         });
 
-        // Get page data
+        // Get landing page data
         TSF.getDataForPage(function (data) {
             if (data['error']) {
                 util.alert('An error occurred while retrieving data. Please reload page.');

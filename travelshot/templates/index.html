@@ -153,6 +153,9 @@
                 Nothing to see here
               </div>
             </div>
+            <div data-sg-portal="category_footer" class="category-footer">
+              <ul></ul>
+            </div>
           </div>
         </template>
 
@@ -263,15 +266,10 @@
               </div>
               <div class="media">
                 <div class="media-left media-top">
-                  <a href="#">
-                    <img class="media-object" data-sg-attr-bind="src: author.picture">
-                  </a>
+                  <img class="media-object" data-sg-attr-bind="src: author.picture">
                 </div>
                 <div class="media-body">
-                  <a href="#">
-                    <h5 class="media-heading">{$ author.name $}</h5>
-                    <p><small>See more</small></p>
-                  </a>
+                  <h5 class="media-heading">{$ author.name $}</h5>
                 </div>
               </div>
               <a data-sg-portal="category_button" href="{$ categoryUrl $}"><h5>{$ category.name $} <small>See more</small></h5></a>
