@@ -98,7 +98,6 @@ textarea {
 #entire-page-wrapper {
     min-height: 100vh;
     height: auto !important;
-    /*height: 100vh;*/
     /* Negative indent footer by its height */
     margin: 0 auto -40px;
     /* Pad bottom by footer height */
@@ -176,6 +175,9 @@ textarea {
 
 .navbar-header .navbar-brand img:last-child {
     opacity: 0;
+    -webkit-filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
+       -moz-filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
+            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.5));
 }
 
 /* Nav bar buttons*/
