@@ -420,10 +420,13 @@ textarea {
 
 /************************ Category Panel ************************/
 .category-panel {
-    position: absolute;
     width: 100%;
     padding-top: 10px;
     padding-bottom: 10px;
+}
+
+.category-panel-absolute {
+    position: absolute;
 }
 
 .category-panel .category-heading {

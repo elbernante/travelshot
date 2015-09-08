@@ -579,7 +579,7 @@ var TSF = (function ($) {
                 self.monitorScroll(true);
 
                 var setBtnAct = function (btn, key) {
-                    $(btn).find('>a:first-child').on('click', function (event) {
+                    $(btn).find('>a:first-of-type').on('click', function (event) {
                         if ('function' === typeof self.clickActions[key]) {
                             event.preventDefault();
                             self.clickActions[key](event);
@@ -590,6 +590,7 @@ var TSF = (function ($) {
                 setBtnAct(self.portals['login_button'], 'login');
                 setBtnAct(self.portals['logout_button'], 'logout');
                 setBtnAct(self.portals['my_shots_button'], 'myshots');
+                setBtnAct(self.portals['home_button'], 'home');
 
                 Segue.on('pageLoad', function (pageObj) {
                     self._udateBtnsWithPage(pageObj);
@@ -1022,6 +1023,7 @@ var TSF = (function ($) {
                 }
 
                 this._isLoaded = false;
+                this.absolutify = true;
 
                 return this;
             },
@@ -1069,6 +1071,10 @@ var TSF = (function ($) {
                 var html = Segue.Element.prototype.html.call(this),
                     self = this,
                     $categories = $(self.portals['category_list']);;
+
+                if (!self.absolutify) {
+                    $(html).filter('div.category-panel').removeClass('category-panel-absolute');
+                }
 
                 var appendItemToList = function (category_id, text, url, action) {
                     var aTag = d.createElement('a');
@@ -1944,38 +1950,68 @@ var TSF = (function ($) {
                 return categoryPage;
             });
 
+            var createHomePage = cachablePage('homepage', function () {
+                var homePage = new SPage('Home Page');
+                homePage.showCover = true;
+
+                var latestItems = new CategoryPanel({
+                    id: 'latestitems',
+                    name: 'Latest Shots'
+                });
+                latestItems.absolutify = false;
+
+                homePage.setItems = function (itemObjArr) {
+                    this.items = itemObjArr;
+                    latestItems.setItems(itemObjArr);
+                };
+
+                homePage.addChildElement(latestItems);
+
+                return homePage;
+            });
+
             var pageLoaders = {
                 homepage: function (pageData) {
-                    var homePage = new SPage('Home Page');
-                    homePage.showCover = true;
-
-                    var _getItems = function (panelObj, id) {
-                        TSF.getItemsForCat(id, function (data) {
-                            if (!data['error'] && data instanceof Array) {
-                                $.each(data, function (itemI, itemO) {
-                                    panelObj.newItemArrived(new ItemEntry(itemO));
-                                });
-                            }
-                        });
-                    };
-
-                    var latestPanel = {
-                        id: 'latest',
-                        name: 'Latest Shots'
-                    };
-
-                    var pnlObj = new Panel(latestPanel);
-                    homePage.addChildElement(pnlObj);
-                    _getItems(pnlObj, latestPanel.id);
-
-                    TSF.getCategories(function (categories) {
-                        $.each(categories, function (i, o) {
-                            var panelObj = new Panel(o);
-                            homePage.addChildElement(panelObj);
-                            _getItems(panelObj, o['id']);
-                        });
-                        Segue.loadPage(homePage, '/');
+                    TSF.getLatestItems(function (data) {
+                        if (data && !data['error']) {
+                            var homePage = createHomePage();
+                            homePage.setItems(data);
+                            Segue.loadPage(homePage, '/');
+                        } else {
+                            Segue.loadPage(createMessagePage('An error occurred. Please try again later.'), '/');
+                        }
                     });
+
+                    // var homePage = new SPage('Home Page');
+                    // homePage.showCover = true;
+
+                    // var _getItems = function (panelObj, id) {
+                    //     TSF.getItemsForCat(id, function (data) {
+                    //         if (!data['error'] && data instanceof Array) {
+                    //             $.each(data, function (itemI, itemO) {
+                    //                 panelObj.newItemArrived(new ItemEntry(itemO));
+                    //             });
+                    //         }
+                    //     });
+                    // };
+
+                    // var latestPanel = {
+                    //     id: 'latest',
+                    //     name: 'Latest Shots'
+                    // };
+
+                    // var pnlObj = new Panel(latestPanel);
+                    // homePage.addChildElement(pnlObj);
+                    // _getItems(pnlObj, latestPanel.id);
+
+                    // TSF.getCategories(function (categories) {
+                    //     $.each(categories, function (i, o) {
+                    //         var panelObj = new Panel(o);
+                    //         homePage.addChildElement(panelObj);
+                    //         _getItems(panelObj, o['id']);
+                    //     });
+                    //     Segue.loadPage(homePage, '/');
+                    // });
                 },
 
                 loginpage: function (pageData) {
@@ -2200,7 +2236,7 @@ var TSF = (function ($) {
                     if (pageLoaders[data['pagetype']]) {
                         pageLoaders[data['pagetype']](data);
                     } else {
-                        util.alert('Ivalid page data. Please contact administrator.');
+                        util.alert('Ivalid page data. Please contact help desk.');
                     }
                 },
 
@@ -2279,6 +2315,10 @@ var TSF = (function ($) {
         navBar.setActionFor('myshots', function () {
             PageFactory.loadMyItemsPage();
         });
+
+        navBar.setActionFor('home', function () {
+            PageFactory.loadHomePage();
+        })
 
         // Setup footer
         var footer = new Footer();
