@@ -4,7 +4,6 @@ Contains utility functions
 
 from sqlalchemy.exc import IntegrityError
 
-
 from ..models import db
 from ..models import User
 from ..models import Category

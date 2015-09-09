@@ -4,7 +4,6 @@ import json
 _basedir = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = False # Turns on debugging features in Flask
-BCRYPT_LEVEL = 12 # Configuration for the Flask-Bcrypt extension
 MAIL_FROM_EMAIL = "elbernante@gmail.com" # For use in application emails
 
 CLIENT_ID = json.loads(open('g_client_secrets.json', 'r').read())['web']['client_id']
