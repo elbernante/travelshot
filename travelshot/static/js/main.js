@@ -1111,7 +1111,7 @@ var TSF = (function ($) {
                     var createAnchor = function () {
                         var anchorTag = d.createElement('a');
                         anchorTag.href = url;
-                        anchorTag.text = text;
+                        $(anchorTag).text(text);
                         $(anchorTag).on('click', function (evt) {
                             evt.preventDefault();
                             action();
