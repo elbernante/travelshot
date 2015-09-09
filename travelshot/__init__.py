@@ -26,9 +26,7 @@ from .api import interface
 from .views.pages import pages
 
 from .feeds.atom import atom
-from .feeds.rss import rss
 
 app.register_blueprint(api, url_prefix='/api')
 app.register_blueprint(pages, url_prefix='/pages')
 app.register_blueprint(atom, url_prefix='/atom')
-app.register_blueprint(rss, url_prefix='/rss')
