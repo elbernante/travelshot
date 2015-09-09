@@ -1,7 +1,10 @@
 '''
-API Module
-Contains routes for API calls returning
-JSON or XML format.
+Contains API end points related to authentication.
+
+The returned response can either be JSON or XML format.
+
+The format is determined from `?format=` query param of the request URL.
+If none is supplied, defaults to JSON.
 '''
 
 import requests
@@ -25,33 +28,22 @@ from oauth2client.client import OAuth2Credentials
 from ..utils import util
 from ..utils import datastore as ds
 
-
 from . import api
 
-# TODO: Remove this function
-# def allowed_file(filename):
-#     return '.' in filename and \
-#            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
-
-# TODO: Remove this function
-@api.route('/')
-def index():
-    '''Test route'''
-    return 'Hello World! API'
-
-# TODO: Remove this function
-@api.route('/test')
-def nilatch():
-    # user = User(name='Test User')
-    # db.session.add(user)
-    # db.session.commit()
-    # print("User ID: " + str(user.serialize))
-    return 'Test User Added'
 
 @api.route('/currentuser/', methods=['GET'])
 @util.csrf_protect_enable
 @util.format_response
 def get_current_user():
+    '''Returns the currently logged in user. CSRF-protected.
+
+    Requires:
+        CSRF token. The request must include a CSRF token to use this end point.
+
+    Returns: User object representing the user that is currently logged in.
+                Returns `false` if there is none.
+    '''
+
     if login_session.get('user_id', None) is None:
         return 'false'
 
@@ -65,7 +57,15 @@ def get_current_user():
 @util.csrf_protect_enable
 @util.format_response
 def login_key():
-    '''Docstring for login_key goes here'''
+    '''Returns keys needed for logging in with third party authentication
+    service (i.e. Google Plus and Facebook). CSRF-protected.
+
+    Requires:
+        CSRF token. The request must include a CSRF token to use this end point.
+
+    Returns: Dictionary of keys for each supported authentication service.
+    '''
+
     state = util.random_key()
     key_set = {
         "state": state,
@@ -86,6 +86,7 @@ def login_key():
 
 def _upgrade_auth_code_to_credentials(auth_code):
     '''Upgrades an authorization code into a credentials object'''
+
     try:
         oauth_flow = flow_from_clientsecrets('g_client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
@@ -119,48 +120,20 @@ def _verifiy_access_token(access_token, gplus_id):
 
 
 def _g_plus_get_user_info(credentials):
+    '''Gets the user info from G Plus.'''
+
     # Get user info
     userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
     params = {'access_token': credentials.access_token, 'alt': 'json'}
     user_info = util.to_json(requests.get(userinfo_url, params=params).text)
     if not user_info or user_info.get('error'):
         return None, 'Failed to retrieve user information.'
-    return user_info, 'Success'
-
-
-def _dump_user_info_to_session_XXX(credentials):
-    # TODO: Remove this function
-    # Get user info
-    userinfo_url = "https://www.googleapis.com/oauth2/v2/userinfo"
-    params = {'access_token': credentials.access_token, 'alt': 'json'}
-    user_info = util.to_json(requests.get(userinfo_url, params=params).text)
-    if not user_info or user_info.get('error'):
-        return None, 'Failed to retrieve user information.'
-
-    # Store the access token in the session for later use.
-    login_session['credentials'] = credentials.to_json()
-    login_session['gplus_id'] = credentials.id_token['sub']
-
-    # Store user info in login session
-    login_session['provider'] = 'google'
-    login_session['access_token'] = None    # facebook specific
-    login_session['facebook_id'] = None     # facebook specific
-
-    login_session['email'] = user_info.get('email', '')
-    login_session['name'] = user_info.get('name', '')
-    login_session['first_name'] = user_info.get('given_name', '')
-    login_session['middle_name'] = user_info.get('middle_name', '')
-    login_session['last_name'] = user_info.get('family_name', '')
-    login_session['locale'] = user_info.get('locale', '')
-    login_session['gender'] = user_info.get('gender', '')
-    login_session['link'] = user_info.get('link', '')
-    login_session['picture'] = user_info.get('picture', '')
-    login_session['verified_email'] = user_info.get('verified_email', False)
-
     return user_info, 'Success'
 
 
 def _dump_user_info_to_session(user_info, provider):
+    '''Saves the user info into the session.'''
+
     login_session['provider'] = provider
 
     login_session['email'] = user_info.get('email', None)
@@ -189,6 +162,23 @@ def _dump_user_info_to_session(user_info, provider):
 @util.csrf_protect_enable
 @util.format_response
 def gconnect():
+    '''Authenticates the user through G Plus service. CSRF-protected.
+
+    Requires:
+        CSRF token. The request must include a CSRF token to use this end point.
+
+    Parameters:
+        authentication code - Required. The request must contain, and only
+                                containd, authentication code acquired from
+                                G Plus authentication service. The request
+                                content-type must be set to
+                                `application/octet-stream; charset=utf-8`.
+
+    Returns: User info object is authentication is successful. Otherwise returns
+                an error object.
+
+    '''
+
     # Read submitted authorization code
     code = request.data
 
@@ -232,6 +222,8 @@ def gconnect():
     return user.serialize
 
 def _clean_up_session():
+    '''Cleans up the stored user info in the login_session when the logs out '''
+
     # Remove store login session data
     login_session['user_id'] = None
 
@@ -258,6 +250,11 @@ def _clean_up_session():
 @api.route('/gdisconnect/', methods=['GET'])
 @util.format_response
 def gdisconnect():
+    '''Revokes the G Plus credentials of the user when the user logs out.
+
+    Returns: Success object if successful. Otherwise returns an error object.
+    '''
+
     credentials = login_session.get('credentials')
     if credentials is None:
         raise Unauthorized("User is not signed in.")
@@ -275,6 +272,8 @@ def gdisconnect():
 
 
 def _get_long_live_access_token(short_live_token):
+    '''Exchanges the short-live token for a long-live token from Facebook.'''
+
     # Obtain long-lived access token
     url = 'https://graph.facebook.com/oauth/access_token'
     params = {
@@ -294,8 +293,11 @@ def _get_long_live_access_token(short_live_token):
 
 
 def _fb_get_user_info(access_token):
+    '''Gets the user info from Facebook.'''
+
     # Get user info
-    fields = ['id', 'email', 'name', 'first_name', 'middle_name', 'gender', 'last_name', 'link', 'locale', 'picture']
+    fields = ['id', 'email', 'name', 'first_name', 'middle_name', 'gender', \
+                'last_name', 'link', 'locale', 'picture']
     url = 'https://graph.facebook.com/v2.4/me'
     params = {
         'fields': ','.join(fields),
@@ -314,6 +316,23 @@ def _fb_get_user_info(access_token):
 @util.csrf_protect_enable
 @util.format_response
 def fbconnect():
+    '''Authenticates the user through Facebook service. CSRF-protected.
+
+    Requires:
+        CSRF token. The request must include a CSRF token to use this end point.
+
+    Parameters:
+        short-live access token - Required. The request must contain, and only
+                                containd, short-live access token acquired from
+                                Facebook authentication service. The request
+                                content-type must be set to
+                                `application/octet-stream; charset=utf-8`.
+
+    Returns: User info object is authentication is successful. Otherwise returns
+                an error object.
+
+    '''
+
     # Read access token
     temp_access_token = request.data
 
@@ -352,6 +371,8 @@ def fbconnect():
 @api.route('/fbdisconnect/', methods=['GET'])
 @util.format_response
 def fbdisconnect():
+    '''Revokes the user access token when the user logs out.'''
+
     access_token = login_session.get('access_token')
     facebook_id = login_session['facebook_id']
     if access_token is None:
@@ -372,6 +393,11 @@ def fbdisconnect():
 @api.route('/logout/', methods=['GET'])
 @util.require_login
 def log_out():
+    '''Logs out the current user.
+    Invokes either gdisconnect() or fbdisconnect() depending on what the user
+    used to log in.
+    '''
+
     if login_session['provider'] == 'google':
         return gdisconnect()
     elif login_session['provider'] == 'facebook':
@@ -380,50 +406,9 @@ def log_out():
         raise BadRequest('Invalid login session.')
 
 def _get_current_user():
+    '''Returns the info of the currently logged in user.'''
+
     current_user = ds.get_user_by_id(login_session['user_id'])
     if current_user is None:
         raise BadRequest('Invalid login session')
     return current_user
-
-# # TODO: Remove this function
-# @api.route('/upload/', methods=['GET', 'POST'])
-# @util.format_response
-# def upload():
-#     if request.method == 'POST':
-#         print("Request is POST")
-#         print('FILE FIELDS:')
-#         for f in request.files:
-#             print(f)
-#         print('FIELD NAMES:')
-#         for f in request.form:
-#             print(f + ': ' + request.form[f])
-#         image = request.files['image']
-#         if image and allowed_file(image.filename):
-#             image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image.filename))
-#         # TODO: Rename filename
-#     else:
-#         print("Reuqest is GET")
-
-#     print(request.headers['Content-Type'])
-#     return {'upload:': 'success'}
-
-# TODO: Remove this function
-@api.route('/setkey/')
-@util.format_response
-def set_my_key():
-    my_key = util.random_key()
-    login_session['my_test_key'] = my_key
-    return my_key
-
-# TODO: Remove this function
-@api.route('/getkey/')
-@util.format_response
-@util.require_login
-def get_my_key():
-    return login_session.get('my_test_key', 'NO KEY')
-
-# # TODO: Remove this function
-# @api.route('/uploads/image/<filename>')
-# def view_mage(filename):
-#     return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
-#                                filename)
