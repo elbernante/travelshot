@@ -10,7 +10,6 @@ from werkzeug.contrib.atom import AtomFeed
 
 from flask import Blueprint
 
-
 from ..utils import util
 from ..utils import datastore as ds
 

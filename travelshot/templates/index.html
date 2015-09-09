@@ -11,7 +11,7 @@
         <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
         <!-- Place favicon.ico in the root directory -->
 
-        <link href="{{ url_for('atom.latest_items') }}" rel="alternate" title="Latest Shots" type="application/atom+xml">
+        <link href="{{ url_for('atom.latest_items') }}" rel="alternate" title="Travel Shot" type="application/atom+xml">
 
         <link href='https://fonts.googleapis.com/css?family=Roboto:700' rel='stylesheet' type='text/css'>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
@@ -145,7 +145,7 @@
                 </button>
                 <ul data-sg-portal="category_list" class="dropdown-menu"></ul>
               </span>
-              <a class="btn-tool" href="javascript:void(0);"><img src="{{ url_for('static', filename='images/rss_button.png') }}"></a>
+              <a data-sg-hide="hideRss" class="btn-tool" href="{$ feedUrl $}" target="_blank"><img src="{{ url_for('static', filename='images/rss_button.png') }}" alt="Subscribe to this category"></a>
             </div>
             <div class="category-body">
               <div data-sg-portal="item_list" data-sg-hide="hasNoItems" class="grid">

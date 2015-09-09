@@ -902,7 +902,8 @@ var TSF = (function ($) {
                 return self;
             }
         });
-
+        
+        // TODO: Delete this class
         var Panel = Segue.Class('Panel', {
             base: Segue.Element,
             init: function (panelObj) {
@@ -1030,6 +1031,17 @@ var TSF = (function ($) {
                 bindableCategory.hasNoItems = Segue.computed(function () {
                     return !bindableCategory.hasItems();
                 }).subscribeTo(bindableCategory.hasItems);
+
+                bindableCategory.feedUrl = Segue.computed(function () {
+                    var catId = bindableCategory.category.id();
+                    return ('latestitems' === catId) 
+                                ? '/atom/latestitems.atom'
+                                : '/atom/category/' + catId + '/latestitems.atom';
+                }).subscribeTo(bindableCategory.category.id);
+
+                bindableCategory.hideRss = Segue.computed(function () {
+                    return 'myitems' ===  bindableCategory.category.id();
+                }).subscribeTo(bindableCategory.category.id);
 
                 Segue.Element.call(this, {
                     templateNode: $('#category-panel-template').get(0),
