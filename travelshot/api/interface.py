@@ -23,40 +23,6 @@ from . import api
 # TODO: Remove this unused import
 import json
 
-def serialize_item_object(itemObj):
-    item_dict = itemObj.serialize
-    image_filename = '{}.{}'.format(itemObj.id, itemObj.image_type)
-    item_dict['image_url'] = url_for('pages.view_mage', key=itemObj.salt, filename=image_filename)
-
-    user = ds.get_user_by_id(itemObj.author_id)
-    if user is None:
-        author = {
-            'id': itemObj.author_id,
-            'name': 'Unknown',
-            'picture': url_for('static', filename='images/user.jpg')
-        }
-    else:
-        author = {
-            'id': itemObj.author_id,
-            'name': user.name,
-            'picture': user.picture
-        }
-    item_dict['author'] = author
-    del item_dict['author_id']
-
-    cat = ds.get_category_by_id(itemObj.category_id)
-    if cat is None:
-        category = {
-            'id': itemObj.category_id,
-            'name': 'Uncategorized'
-        }
-    else:
-        category = cat.serialize
-    item_dict['category'] = category
-    del item_dict['category_id']
-
-    return item_dict
-
 @api.route('/featured/', methods=['GET'])
 @util.format_response
 def featured_images():
@@ -75,7 +41,7 @@ def my_items():
     res = ds.get_items_by_author(login_session['user_id'])
     items = []
     for i in res:
-        items.append(serialize_item_object(i))
+        items.append(util.serialize_item_object(i))
     return items
 
 @api.route('/items/latest/', methods=['GET'])
@@ -84,7 +50,7 @@ def get_latest_items():
     res = ds.get_latest_items()
     items = []
     for v in res:
-        items.append(serialize_item_object(v))
+        items.append(util.serialize_item_object(v))
     return items
 
 @api.route('/categories/', methods=['GET'])
@@ -106,7 +72,7 @@ def get_category_items(category_id):
     query = ds.get_all_items_for_category(category_id)
     items = []
     for i in query:
-        items.append(serialize_item_object(i))
+        items.append(util.serialize_item_object(i))
 
     return {
         'category': category.serialize,
@@ -120,7 +86,7 @@ def get_items_for_category(category_id):
     res = ds.get_items_for_category(category_id)
     items = []
     for v in res:
-        items.append(serialize_item_object(v))
+        items.append(util.serialize_item_object(v))
     return items
 
 @api.route('/item/new/', methods=['POST'])
@@ -152,7 +118,7 @@ def upload_new_item():
     # TODO: Remove commented code
     # item_dict = item.serialize
     # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
-    return serialize_item_object(item)
+    return util.serialize_item_object(item)
 
 @api.route('/item/<int:item_id>/', methods=['GET'])
 @util.format_response
@@ -160,7 +126,7 @@ def get_item(item_id):
     item = ds.get_item_by_id(item_id)
     if item is None:
         raise NotFound('Item not found')
-    return serialize_item_object(item)
+    return util.serialize_item_object(item)
 
 @api.route('/item/<int:item_id>/edit/', methods=['POST'])
 @util.csrf_protect_enable
@@ -216,7 +182,7 @@ def edit_item(item_id):
     # TODO: Remove commented code
     # item_dict = item.serialize
     # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
-    return serialize_item_object(item)
+    return util.serialize_item_object(item)
 
 @api.route('/item/<int:item_id>/delete/', methods=['GET', 'POST'])
 @util.csrf_protect_enable

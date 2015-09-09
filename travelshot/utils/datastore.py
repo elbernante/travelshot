@@ -57,8 +57,11 @@ def new_category(title):
         cat = None
     return cat
 
-def get_category_by_id(id):
-    return Category.query.filter_by(id=id).first()
+def get_category_by_id(category_id):
+    return Category.query.filter_by(id=category_id).first()
+
+def get_category_by_id_or_404(category_id):
+    return Category.query.filter_by(id=category_id).first_or_404()
 
 def get_categories():
     return Category.query.all()
@@ -110,8 +113,8 @@ def get_latest_items(limit=24, offset=0):
 def get_items_by_author(author_id):
     return Item.query.filter_by(author_id=author_id).order_by(Item.date_created.desc()).all()
 
-def get_items_for_category(category_id, limit=8, offset=0):
-    return Item.query.filter_by(category_id=category_id).order_by(Item.date_created.desc()).limit(limit).offset(offset)
+def get_items_for_category(category_id, limit=24, offset=0):
+    return Item.query.filter_by(category_id=category_id).order_by(Item.date_created.desc()).offset(offset).limit(limit)
 
 def get_all_items_for_category(category_id):
     return Item.query.filter_by(category_id=category_id).order_by(Item.date_created.desc()).all()
