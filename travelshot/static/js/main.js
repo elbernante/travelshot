@@ -1180,6 +1180,8 @@ var TSF = (function ($) {
 
                 self._isLoaded = false
 
+                $html.filter('div.category-panel').addClass('category-panel-absolute');
+
                 $.each(self.elements, function (i, o) {
                     o.dismiss();
                 });
@@ -2034,9 +2036,24 @@ var TSF = (function ($) {
                 },
 
                 uploadpage: function (pageData) {
-                    var uploadpage = createUploadPage();
-                    uploadpage.clearItem();
-                    Segue.loadPage(uploadpage, '/pages/item/new/');
+                    var doLoadUploadPage = function () {
+                        var uploadpage = createUploadPage();
+                        uploadpage.clearItem();
+                        Segue.loadPage(uploadpage, '/pages/item/new/');
+                    };
+
+                    TSF.hasActiveUser(function (isSignedIn) {
+                        if (!isSignedIn) {
+                            var loginPage = createLoginPage();
+                            loginPage.next = function () {
+                                doLoadUploadPage();
+                            };
+                            Segue.loadPage(loginPage, '/pages/login/');
+                            util.flashMessage('Sign in to let the world see your shots.');
+                        } else {
+                            doLoadUploadPage();
+                        }
+                    });
                 },
 
                 viewitempage: function (pageData, item) {
