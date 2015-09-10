@@ -32,11 +32,9 @@ def featured_images():
     Returns: Array of URLs for images, each pointing to an image resource.
     '''
 
-    images = [
-        url_for('static', filename='images/cover_1.jpg'),
-        url_for('static', filename='images/cover_2.jpg'),
-        url_for('static', filename='images/cover_3.jpg')
-    ]
+    images = []
+    for i in range(1, 13):
+        images.append(url_for('static', filename='images/cover_{}.jpg'.format(i)))
     return images
 
 
