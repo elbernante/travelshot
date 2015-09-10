@@ -8,8 +8,6 @@ var TSF = (function ($) {
             },
 
             errorHanlder: function (jqXHR, textStatus, errorThrown, callback) {
-                // TODO: Remove log
-                console.log("ERROR:" + textStatus + " : " + errorThrown);
                 var data = {};
                 try {
                     data = $.parseJSON(jqXHR.responseText);
@@ -182,7 +180,6 @@ var TSF = (function ($) {
                         self.fireEvent('init');
                     } else {
                         self._initStatus = 0;
-                        console.log('TODO: Failed to init keys. Reload page.');
                     }
                 });
             }
@@ -327,7 +324,6 @@ var TSF = (function ($) {
 
             FB.login(function(response){
                 if (response.authResponse) {
-                    console.log("Success FB login");
                     $.ajax({
                         type: 'POST',
                         url: '/api/fbconnect/',
@@ -428,11 +424,6 @@ var TSF = (function ($) {
             } else {
                 util.simpleGet('/api/categories/', callbackwrapper);
             }
-        },
-
-        // TODO: remove this function
-        getItemsForCat: function (catId, callback) {
-            util.simpleGet('/api/items/' + catId + '/', callback);
         },
 
         getCategoryItems: function (catId, callback) {
@@ -882,7 +873,6 @@ var TSF = (function ($) {
             },
 
             dismiss: function () {
-                console.log('dismmising page from subclass: ' + this.title);
                 var self = this;
                 $.each(self.elements, function (i, o) {
                     o.dismiss();
@@ -891,7 +881,6 @@ var TSF = (function ($) {
             },
 
             load: function () {
-                console.log('Loading page from subclass: ' + this.title);
                 var self = this,
                     $bod = $(self.pageBody || d.getElementById('body-content') || d.getElementsByTagName('body')[0]);
 
@@ -900,120 +889,6 @@ var TSF = (function ($) {
                     o.load();
                 });
                 return self;
-            }
-        });
-        
-        // TODO: Delete this class
-        var Panel = Segue.Class('Panel', {
-            base: Segue.Element,
-            init: function (panelObj) {
-                Segue.Element.call(this, {
-                    templateNode: $('#panel-template').get(0),
-                    model: panelObj
-                });
-
-                this._isLoaded = false;
-                this._isRendered = false;
-                this._isRendering = false;
-
-                if (panelObj instanceof Array) {
-                    for (var i = 0, l = panelObj.items.length; i < l; i++) {
-                        this.addChildElement(new ItemEntry(panelObj.items[i]));
-                    }
-                }
-
-                return this;
-            },
-
-            html: function () {
-                if (this.cachedHtml) {
-                    return this.cachedHtml;
-                }
-
-                var html = Segue.Element.prototype.html.call(this);
-
-                // initialize isotope for this panel
-                var $grid = $(this.portals['item_list']).isotope({
-                    itemSelector: '.grid-item',
-                    percentPosition: true,
-                    masonry: {
-                        columnWidth: '.grid-sizer'
-                    }
-                });
-
-                return html;
-            },
-
-            newItemArrived: function (itemEntryObj) {
-                var self = this,
-                    $grid = $(self.portals['item_list']);
-
-                self.addChildElement(itemEntryObj);
-                if (self._isLoaded) {
-                    if (!self._isRendered) {
-                        if (!self._isRendering) {
-                            self._renderElement();
-                        }
-                    } else {
-                        itemEntryObj.isotopeGrid = $grid;
-                        itemEntryObj.load();
-                    }
-                }
-                return self;
-            },
-
-            dismiss: function () {
-                var self = this,
-                    $html = $(self.html());
-
-                self._isLoaded = false;
-                self._isRendering = true;
-                $.each(self.elements, function (i, o) {
-                    o.dismiss();
-                });
-
-                $html.stop().hide('slow', function () {
-                    $html.remove();
-                    self.uncacheHtml();
-                    self._isRendering = false;
-                    self._isRendered = false;
-                });
-                return self;
-            },
-
-            load: function () {
-                var self = this,
-                    $html = $(self.html());
-
-                self._isLoaded = true;
-                self._isRendering = true;
-                self._isRendered = false;
-                self.container.append($html);
-                $html.hide();
-                self._renderElement();
-                return self;
-            },
-
-            _renderElement: function () {
-                var self = this;
-                self._isRendering = true;
-                
-                var $html = $(self.html()),
-                    $grid = $(self.portals['item_list']);
-               
-                if (0 < self.elements.length) {
-                    $html.show('slow', function () {
-                        $grid.isotope('layout');
-                        $.each(self.elements, function (i, o) {
-                            o.isotopeGrid = $grid;
-                            o.load();
-                        });
-                        self._isRendering = false;
-                        self._isRendered = true;
-                    });
-                } else {
-                    self._isRendering = false;
-                }
             }
         });
 
@@ -1749,8 +1624,7 @@ var TSF = (function ($) {
                     TSF.deleteItem(self.item.id, self.nonceToken, {
                         success: function(data, textStatus, jqXHR) {
                             util.flashMessage('Item deleted!');
-                            // TODO: Load Myshots page
-                            PageFactory.loadHomePage();
+                            PageFactory.loadMyItemsPage();
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
                             var errMsg = (jqXHR.responseJSON && jqXHR.responseJSON.error && jqXHR.responseJSON.error.description) ?

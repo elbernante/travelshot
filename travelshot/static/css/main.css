@@ -506,33 +506,6 @@ textarea {
     padding-left: 6px;
 }
 
-/************************ END: Category Panel ************************/
-
-/************************ Panel ************************/
-.rotate-90 {
-    -webkit-transform: rotate(90.0deg);
-       -moz-transform: rotate(90.0deg);
-         -o-transform: rotate(90.0deg);
-            transform: rotate(90.0deg);
-}
-
-
-.panel {
-    border: 0px solid transparent
-}
-
-.panel-default>.panel-heading {
-    color: #FF5208;
-    background: transparent;
-    border-color: #FF5208;
-    padding: 10px 15px 0px 15px;
-}
-
-.panel-heading .btn-tool {
-    position: inline-block;
-    float: right;
-}
-
 /* ---- isotope ---- */
 .grid * {
   -webkit-box-sizing: border-box;
@@ -651,8 +624,8 @@ textarea {
     overflow: hidden;
     text-overflow: ellipsis; 
 }
-/************************ END: Panel ************************/
 
+/************************ END: Category Panel ************************/
 
 /************************ Login Panel ************************/
 .shadowed-box {
