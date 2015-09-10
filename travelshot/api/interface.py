@@ -1,7 +1,10 @@
 '''
-API Module
-Contains routes for API calls returning
-JSON or XML format.
+Contains API end points related to CRUD operations.
+
+The returned response can either be JSON or XML format.
+
+The format is determined from `?format=` query param of the request URL.
+If none is supplied, defaults to JSON.
 '''
 
 import os
@@ -20,12 +23,15 @@ from ..utils import datastore as ds
 
 from . import api
 
-# TODO: Remove this unused import
-import json
 
 @api.route('/featured/', methods=['GET'])
 @util.format_response
 def featured_images():
+    '''Returns featured photos for the page cover.
+
+    Returns: Array of URLs for images, each pointing to an image resource.
+    '''
+
     images = [
         url_for('static', filename='images/cover_1.jpg'),
         url_for('static', filename='images/cover_2.jpg'),
@@ -33,38 +39,75 @@ def featured_images():
     ]
     return images
 
+
 @api.route('/myitems/', methods=['GET'])
 @util.csrf_protect_enable
 @util.require_login
 @util.format_response
 def my_items():
+    '''Returns the items created by the current user. CSRF-protected.
+
+    Requires:
+        CSRF token - The request must include a CSRF token to use this
+                        end point.
+        Logged in  - The user must be logged in to use this end point.
+
+    Returns: Array of item object. Returns and empty array if the the user does
+                not have any created items. Returns an error object if the
+                request does not have a valid CSRF token, or if there is no user
+                currently logged in.
+    '''
+
     res = ds.get_items_by_author(login_session['user_id'])
     items = []
     for i in res:
         items.append(util.serialize_item_object(i))
     return items
 
+
 @api.route('/items/latest/', methods=['GET'])
 @util.format_response
 def get_latest_items():
-    res = ds.get_latest_items()
+    '''Returns the 24 most recently created items.
+
+    Returns: Array of item objects sorted by recently created, or an empty array
+                if there is none.
+    '''
+
+    res = ds.get_latest_items(limit=24)
     items = []
-    for v in res:
-        items.append(util.serialize_item_object(v))
+    for item in res:
+        items.append(util.serialize_item_object(item))
     return items
+
 
 @api.route('/categories/', methods=['GET'])
 @util.format_response
 def get_categories():
+    '''Returns the available categories in the database.
+
+    Returns: Array of category objects, or an empty array if there is none.
+    '''
+
     res = ds.get_categories()
     cats = []
-    for v in res:
-        cats.append(v.serialize)
+    for category in res:
+        cats.append(category.serialize)
     return cats
+
 
 @api.route('/category/<int:category_id>/items/', methods=['GET'])
 @util.format_response
 def get_category_items(category_id):
+    '''Returns the category info and all items in the category.
+
+    Prameters:
+        category_id - Required. The ID of the category.
+
+    Returns: Object with category info and array of item objects. Returns an
+                error object if category_id is invalid.
+    '''
+
     category = ds.get_category_by_id(category_id)
     if category is None:
         raise NotFound('Category not found.')
@@ -79,21 +122,38 @@ def get_category_items(category_id):
         'items': items
     }
 
-# TODO: Remove this
-@api.route('/items/<int:category_id>/', methods=['GET'])
-@util.format_response
-def get_items_for_category(category_id):
-    res = ds.get_items_for_category(category_id)
-    items = []
-    for v in res:
-        items.append(util.serialize_item_object(v))
-    return items
 
 @api.route('/item/new/', methods=['POST'])
 @util.csrf_protect_enable
 @util.require_login
 @util.format_response
 def upload_new_item():
+    '''Saves new item into the database. CSRF-protected.
+
+    The the photo for the item is saved in the file system with filename:
+        [item_id].[extenstion]
+    in the `/uploads/images/` folder (see config.py). The filename is the ID of
+    the item. The original file extension of the submitted image is preserved.
+
+    Accepts `multipart/form-data` post requests.
+
+    Requires:
+        CSRF token - The request must include a CSRF token to use this
+                        end point.
+        Logged in  - The user must be logged in to use this end point.
+
+    POST Form Fields:
+        image       - Required. File. Image file to be saved.
+        category    - Required. Integer. Category ID for the item.
+        title       - Optional. Text. Title for the item.
+        description - Optional. Text. Description for the item.
+
+    Returns: Item object representing the newly created item, or error object if
+                an error occured while saving. Returns an error object if the
+                request does not have a valid CSRF token, or if there is no user
+                currently logged in.
+    '''
+
     image = request.files.get('image', None)
     if image is None or not util.allowed_file(image.filename):
         raise BadRequest('Invalid image.')
@@ -113,26 +173,79 @@ def upload_new_item():
         raise BadRequest('Invalid upload request.')
 
     image_filename = '{}.{}'.format(item.id, img_type)
-    image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
+    image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], \
+        image_filename))
 
-    # TODO: Remove commented code
-    # item_dict = item.serialize
-    # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
     return util.serialize_item_object(item)
+
 
 @api.route('/item/<int:item_id>/', methods=['GET'])
 @util.format_response
 def get_item(item_id):
+    '''Return item object of the the specified item ID.
+
+    Parameters:
+        item_id - Required. Integer. ID of of the item.
+
+    Returns: Item object, or error object if item_id does not exists.
+    '''
+
     item = ds.get_item_by_id(item_id)
     if item is None:
         raise NotFound('Item not found')
     return util.serialize_item_object(item)
+
 
 @api.route('/item/<int:item_id>/edit/', methods=['POST'])
 @util.csrf_protect_enable
 @util.require_login
 @util.format_response
 def edit_item(item_id):
+    '''Updates an existing item in the database. CSRF-protected.
+
+    The the photo for the item is saved in the file system with filename:
+        [item_id].[extenstion]
+    in the `UPLOAD_FOLDER` folder (see config.py). The filename is the ID of
+    the item. The original file extension of the submitted image is preserved.
+
+    Accepts `multipart/form-data` or `application/json` post requests.
+
+    If the request contains an image to replace the original, the content-type
+    `multipart/form-data` should be used.
+
+    If the request is not replacing the image file, there is no need to include
+    the image file in the request, and `application/json` content-type can be
+    used for faster uploading.
+
+    All form fields are optional (except for `item_id`). If a field is not
+    supplied, the original value in the database is unchanged.
+
+    The currently logged in user should be the author of the item to be updated,
+    otherwise Unauthorized error will be raised.
+
+    Requires:
+        CSRF token - The request must include a CSRF token to use this
+                        end point.
+        Logged in  - The user must be logged in to use this end point, and is
+                        the author of the item to be updated.
+
+    Parameters:
+        item_id - Required. ID of the item to be updated. This should match with
+                    the value item_id field in the form.
+
+    POST Form Fields:
+        item_id     - Required. Integer. ID of the item to be updated.
+        image       - Optional. File. Image file to replace the original.
+        category    - Optional. Integer. Category ID for the item.
+        title       - Optional. Text. Title for the item.
+        description - Optional. Text. Description for the item.
+
+    Returns: Item object with the updated values, or error object if an error
+                occured while saving. Returns an error object if the request
+                does not have a valid CSRF token, or if there is no user
+                currently logged in, or if the current user is not the author of
+                the item being updated.
+    '''
 
     if request.content_type == 'application/json':
         data = request.json
@@ -177,18 +290,47 @@ def edit_item(item_id):
 
     image_filename = '{}.{}'.format(item.id, item.image_type)
     if image is not None:
-        image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], image_filename))
+        image.save(os.path.join(os.getcwd() + app.config['UPLOAD_FOLDER'], \
+            image_filename))
 
-    # TODO: Remove commented code
-    # item_dict = item.serialize
-    # item_dict['image_url'] = url_for('pages.view_mage', key=item.salt, filename=image_filename)
     return util.serialize_item_object(item)
+
 
 @api.route('/item/<int:item_id>/delete/', methods=['GET', 'POST'])
 @util.csrf_protect_enable
 @util.require_login
 @util.format_response
 def delete_item(item_id):
+    '''Deletes an existing item from the database. CSRF-protected.
+
+    The currently logged in user should be the author of the item to be deleted,
+    otherwise Unauthorized error will be raised.
+
+    GET request method will return a nonce token to be used with the actual
+    delete request (using POST method).
+
+    POST request method will validate the nonce token (returned by GET method)
+    and delete the item from the database.
+
+    Requires:
+        CSRF token - The request must include a CSRF token to use this
+                        end point.
+        Logged in  - The user must be logged in to use this end point, and is
+                        the author of the item to be deleted.
+
+    Parameters:
+        item_id - Required. ID of the item to be deleted.
+
+    POST Form Fields:
+        nonce_token - Required. Text. Nonce token acquired from GET request
+                        method.
+
+    Returns: Nonce token object for GET method or success object for POST
+                method. Returns an error object if the request does not have a
+                valid CSRF token, or if there is no user currently logged in, or
+                if the current user is not the author of the item to be deleted.
+    '''
+
     item = ds.get_item_by_id(item_id)
     if item is None:
         raise NotFound('Item not found.')
@@ -215,23 +357,3 @@ def delete_item(item_id):
             raise BadRequest('Error deleting item.')
 
         return {'success': True}
-
-
-# @api.route('/tesapi/', methods=['GET', 'POST'])
-# @util.format_response
-# def test_api_route():
-#     print(request.content_type)
-#     if request.content_type == 'application/json':
-#         print json.dumps(request.json)
-#     print(request.data)
-#     print("By form:")
-#     for k, v in request.form.items():
-#         print(k, v)
-#     return 'OK'
-
-
-# fh = open("imageToSave.png", "wb")
-# fh.write(imgData.decode('base64'))
-# fh.close()
-
-

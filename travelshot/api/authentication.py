@@ -1,5 +1,5 @@
 '''
-Contains API end points related to authentication.
+Contains API end points related to user authentication.
 
 The returned response can either be JSON or XML format.
 
@@ -84,7 +84,7 @@ def login_key():
     return key_set
 
 
-def _upgrade_auth_code_to_credentials(auth_code):
+def _upgrade_code_to_credentials(auth_code):
     '''Upgrades an authorization code into a credentials object'''
 
     try:
@@ -183,7 +183,7 @@ def gconnect():
     code = request.data
 
     # Upgrade the authorization code into a credentials object
-    (credentials, message) = _upgrade_auth_code_to_credentials(code)
+    (credentials, message) = _upgrade_code_to_credentials(code)
     if credentials is None:
         raise Unauthorized(message)
 
@@ -404,6 +404,7 @@ def log_out():
         return fbdisconnect()
     else:
         raise BadRequest('Invalid login session.')
+
 
 def _get_current_user():
     '''Returns the info of the currently logged in user.'''
