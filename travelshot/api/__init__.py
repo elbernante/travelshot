@@ -1,8 +1,14 @@
 '''
 Module containing rest API end points.
+
 Contains 2 major modules
     1. authentication - Handles authentication-related requests
     2. interface - Handles CRUD-related requests
+
+The returned response can either be JSON or XML format.
+
+The format is determined from `?format=` query param of the request URL.
+If none is supplied, defaults to JSON.
 '''
 
 from flask import Blueprint

@@ -1,13 +1,35 @@
 '''
-Views Module
-Contains routes for rendering HTML pages
+Pages View Module
+
+Contains routes for rendering HTML pages.
+
+The front-end is a single-page web application and all page routes returns the
+same HTML file (handled by @util.smart_request decorator). The HTML file will
+include a CSRF token in the header which javascript can retrieve and use for
+API requests that requires one.
+
+All front-end operations (e.g. page rendering, front-end validation, etc.) are
+handled by javascript and communicate directly to API end points.
+
+The views end-points specified here merely provides a way to tell the front-end
+application which page to render based on the request URL.
+
+All pages are decorated with @util.smart_request. Returns either the HTML for
+the single-page web app, or the data object that tells the front-end web app
+which page to render.
+
+If the request includes a query argument `d=1`, the decorator returns the
+resulting value of the function it decorated from (i.e. tells the front-end web
+app which page to render). Otherwise, it returns the HTML page.
+
+If it returns a data value, the format can either be JSON or XML which can be
+specified with `format=json` or `format=xml` query argument. Defaults to JSON
+format.
 '''
 
 import os
 
-from flask import request
 from flask import Blueprint
-from flask import render_template
 from flask import send_from_directory
 from flask import current_app as app
 
@@ -16,96 +38,114 @@ from ..utils.datastore import get_item_with_keys_or_404
 
 pages = Blueprint('pages', __name__)
 
-# TODO: Remove this function
-@util.format_response
-def format_data_response(data):
-    return data
-
-# TODO: Remove this function
-@pages.route('/indexxx/')
-def indexxx():
-    '''Test route'''
-    is_requesting_data = False
-    if request and request.args:
-        is_requesting_data = request.args.get('d', '0') == '1'
-
-    if is_requesting_data:
-        return format_data_response({'pagetype': 'homepage'})
-
-    return render_template('indexxx.html')
 
 @pages.route('/index/', methods=['GET'])
 @util.smart_request
 def index():
-    '''Test route'''
+    '''Alias route for home page'''
     return {'pagetype': 'homepage'}
+
 
 @pages.route('/login/', methods=['GET'])
 @util.smart_request
 def login():
-    '''Test route'''
+    '''View route for login page'''
     return {'pagetype': 'loginpage'}
+
 
 @pages.route('/logout/', methods=['GET'])
 @util.smart_request
 def logout():
-    '''Test route'''
+    '''View route for logout page'''
     return {'pagetype': 'logoutpage'}
+
 
 @pages.route('/item/new/', methods=['GET'])
 @util.smart_request
 def new_item():
-    '''Test route'''
+    '''View route for uploading new item'''
     return {'pagetype': 'uploadpage'}
+
 
 @pages.route('/item/<int:item_id>/', methods=['GET'])
 @util.smart_request
 def view_item(item_id):
-    '''Test route'''
+    '''View route for displaying an existing item.
+
+    Parameters:
+        item_id - Required. Integer. ID of the item.
+    '''
     return {'pagetype': 'viewitempage', 'id': item_id}
+
 
 @pages.route('/item/<int:item_id>/edit/', methods=['GET'])
 @util.smart_request
 def edit_item(item_id):
-    '''Test route'''
+    '''View route for editing an exiting item.
+
+    Parameters:
+        item_id - Required. Integer. ID of the item.
+    '''
     return {'pagetype': 'edititempage', 'id': item_id}
+
 
 @pages.route('/item/<int:item_id>/delete/', methods=['GET'])
 @util.smart_request
 def delete_item(item_id):
-    '''Test route'''
+    '''View route for cofirmation page to delete an item.
+
+    Parameters:
+        item_id - Required. Integer. ID of the item.
+    '''
     return {'pagetype': 'deleteitempage', 'id': item_id}
+
 
 @pages.route('/myitems/', methods=['GET'])
 @util.smart_request
 def view_my_items():
-    '''Test route'''
+    '''View route for displaying the list of items created by the currently
+    logged in user.
+    '''
     return {'pagetype': 'myitemspage'}
+
 
 @pages.route('/latesitems/', methods=['GET'])
 @util.smart_request
 def view_latest_items():
-    '''Test route'''
+    '''View route for displaying the most recently created items'''
     return {'pagetype': 'latestitemspage'}
+
 
 @pages.route('/category/<int:category_id>/items/', methods=['GET'])
 @util.smart_request
 def view_category(category_id):
-    '''Test route'''
+    '''View route for displaying the most recent items of the specified
+    category.
+
+    Parameters:
+        category_id - Required. Integer. ID of the category.
+    '''
     return {'pagetype': 'categorypage', 'id': category_id}
 
-# TODO: Remove this function
-@pages.route('/uploadxxx/')
-def uploadxxx():
-    '''Test route'''
-    return render_template('upload.html')
 
 @pages.route('/image/<key>/<filename>', methods=['GET'])
 def view_mage(key, filename):
+    '''Returns the image file of the specified file name.
+
+    The parameters key and filename can be obtained from serialized Item object.
+
+    Parameters:
+        key      - Required. String. The salt key that was assigned to the item
+                    when it was created (or when the image was updated).
+        filename - Required. String. The filename of the image.
+
+    Returns: Image file or a NotFound error if the file does not exists.
+    '''
     item_id = ''
     ext = ''
     if '.' in filename:
         (item_id, ext) = filename.rsplit('.', 1)
+    # Check if item_id, salt key, and file extension match in the database
     get_item_with_keys_or_404(item_id, key, ext)
     return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
                                filename)
