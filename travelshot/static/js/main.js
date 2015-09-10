@@ -84,12 +84,7 @@ var TSF = (function ($) {
                     util.functionify(callback)(data);
                 }, callback);
             },
-            // refreshKeys: function (callback) {
-            //     requestKeys(function (data) {
-            //         g['state'] = data['state'];
-            //         util.functionify(callback)(data);
-            //     }, callback);
-            // },
+
             asyncGet: function (key, callback) {
                 getRequestQueue.push({key: key, callback: callback});
                 processQueue();
