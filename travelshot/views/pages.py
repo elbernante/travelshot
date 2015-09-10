@@ -12,7 +12,7 @@ from flask import send_from_directory
 from flask import current_app as app
 
 from ..utils import util
-from ..utils.datastore import get_item_with_id_salt_type_or_404
+from ..utils.datastore import get_item_with_keys_or_404
 
 pages = Blueprint('pages', __name__)
 
@@ -106,6 +106,6 @@ def view_mage(key, filename):
     ext = ''
     if '.' in filename:
         (item_id, ext) = filename.rsplit('.', 1)
-    get_item_with_id_salt_type_or_404(item_id, key, ext)
+    get_item_with_keys_or_404(item_id, key, ext)
     return send_from_directory(os.getcwd() + app.config['UPLOAD_FOLDER'],
                                filename)
