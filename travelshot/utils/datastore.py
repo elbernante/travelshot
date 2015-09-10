@@ -1,5 +1,5 @@
 '''
-Contains functions related to querying the database.
+Contains functions for querying the database.
 '''
 
 from sqlalchemy.exc import IntegrityError

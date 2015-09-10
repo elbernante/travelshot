@@ -17,7 +17,7 @@ class User(db.Model):
     id = db.Column(db.BigInteger().with_variant(sqlite.INTEGER(), 'sqlite'), db.Sequence('user_id_seq'), primary_key=True)
     gplus_id = db.Column(db.String(80), unique=True, nullable=True)
     facebook_id = db.Column(db.String(80), unique=True, nullable=True)
-    email = db.Column(db.String(80))              # Users can deny access to email address
+    email = db.Column(db.String(80))              # Nullable because users can deny access to email address
     name = db.Column(db.String(240))
     first_name = db.Column(db.String(80))
     middle_name = db.Column(db.String(80))
@@ -33,7 +33,8 @@ class User(db.Model):
 
     @property
     def serialize(self):
-        """Return object data in easily serializable format"""
+        '''Return object data in easily serializable format'''
+
         return {
             'id': self.id,
             'gplus_id': self.gplus_id,
@@ -59,7 +60,8 @@ class Category(db.Model):
 
     @property
     def serialize(self):
-        """Return object data in easily serializable format"""
+        '''Return object data in easily serializable format'''
+
         return {
             'id': self.id,
             'name': self.name
@@ -83,7 +85,8 @@ class Item(db.Model):
 
     @property
     def serialize(self):
-        """Return object data in easily serializable format"""
+        '''Return object data in easily serializable format'''
+
         return {
             'id': self.id,
             'title': self.title,
