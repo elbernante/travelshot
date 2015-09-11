@@ -7,8 +7,12 @@ Contains 2 major modules
 
 The returned response can either be JSON or XML format.
 
-The format is determined from `?format=` query param of the request URL.
+The response format is determined from `?format=` query parameter of the request URL.
 If none is supplied, defaults to JSON.
+
+Valid values for format parameter:
+    - json
+    - xml
 '''
 
 from flask import Blueprint

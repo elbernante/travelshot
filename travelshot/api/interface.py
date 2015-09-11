@@ -3,8 +3,12 @@ Contains API end points related to CRUD operations.
 
 The returned response can either be JSON or XML format.
 
-The format is determined from `?format=` query param of the request URL.
+The response format is determined from `?format=` query parameter of the request URL.
 If none is supplied, defaults to JSON.
+
+Valid values for format parameter:
+    - json
+    - xml
 '''
 
 import os
