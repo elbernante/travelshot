@@ -22,7 +22,3 @@ instance/*
 travelshot/uploads/images/*
 !travelshot/uploads/images/.gitinclude
 
-# Client Secrets #
-##################
-fb_client_secrets.json
-g_client_secrets.json
