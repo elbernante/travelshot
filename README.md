@@ -1,9 +1,7 @@
 Travel Shot
 ======================================
 
-Web application for sharing travel photos.
-Project 3 for Udacity Full Stack Nano Degree.
-Developed with Flask and SQLAlchemy, and using third party authentication services (G Plus and Facebook).
+Web application for sharing travel photos. Developed with Flask and SQLAlchemy, and using third party authentication services (G Plus and Facebook).
 
 
 Setting Up
