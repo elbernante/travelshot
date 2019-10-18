@@ -1,7 +1,7 @@
 Flask==0.10.1
 Jinja2==2.7.2
 SQLAlchemy==0.8.4
-Werkzeug==0.9.4
+Werkzeug==0.15.3
 html5lib==0.999
 httplib2==0.9.1
 jsonpatch==1.3
